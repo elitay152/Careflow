@@ -1,0 +1,10 @@
+version: 2
+sources:
+  - name: raw
+    schema: "{{ env_var('DBT_RAW_SCHEMA', 'public') }}"
+    description: Validated synthetic FHIR resources loaded by Careflow.
+    tables:
+      - name: patients
+      - name: encounters
+      - name: conditions
+      - name: medications

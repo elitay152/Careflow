@@ -1,0 +1,13 @@
+careflow:
+  target: dev
+  outputs:
+    dev:
+      type: postgres
+      host: "{{ env_var('DBT_HOST', 'localhost') }}"
+      port: "{{ env_var('DBT_PORT', '5432') | int }}"
+      user: "{{ env_var('DBT_USER', 'careflow') }}"
+      password: "{{ env_var('DBT_PASSWORD') }}"
+      dbname: "{{ env_var('DBT_DBNAME', 'careflow') }}"
+      schema: "{{ env_var('DBT_TARGET_SCHEMA', 'analytics') }}"
+      threads: 2
+      sslmode: "{{ env_var('DBT_SSLMODE', 'prefer') }}"

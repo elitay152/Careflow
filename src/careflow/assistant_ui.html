@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Careflow · Healthcare analytics</title>
+<style>
+:root{font:16px/1.6 system-ui,sans-serif;color:#19323b;background:#f3f7f8}*{box-sizing:border-box}
+body{max-width:1000px;margin:0 auto;padding:2rem 1.25rem}header{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #cddde0;padding-bottom:1rem}
+.brand{font-size:1.35rem;font-weight:750;letter-spacing:-.04em}.badge{font-size:.8rem;color:#236b62;background:#e1efeb;padding:.3rem .7rem;border-radius:20px}
+h1{font-size:clamp(2rem,5vw,3.2rem);line-height:1.15;letter-spacing:-.05em;margin:2.5rem 0 .8rem}p{max-width:780px}.muted,small{color:#536a73}
+section{background:white;border:1px solid #d8e5e7;border-radius:14px;padding:1.5rem;margin:1.5rem 0}label{font-weight:650;display:block;margin-bottom:.5rem}
+textarea{font:inherit;width:100%;min-height:90px;resize:vertical;border:1px solid #b7cccf;border-radius:8px;padding:.8rem}
+button{font:inherit;border:0;cursor:pointer;border-radius:8px}#submit{background:#176b60;color:white;padding:.65rem 1.2rem;margin-top:.75rem;font-weight:650}button:disabled{opacity:.55;cursor:wait}
+.examples{display:flex;gap:.5rem;flex-wrap:wrap;margin-top:1rem}.examples button{background:#edf4f4;color:#25565c;padding:.4rem .7rem;font-size:.85rem}
+table{width:100%;border-collapse:collapse;font-size:.9rem}th,td{padding:.65rem;text-align:left;border-bottom:1px solid #deeaec}th{font-weight:650}.scroll{overflow-x:auto}
+pre{white-space:pre-wrap;overflow-wrap:anywhere;font-size:.8rem;background:#f2f6f7;padding:1rem;border-radius:8px}summary{cursor:pointer;color:#2a696b}#answer{font-size:1.15rem;font-weight:550}
+#error{color:#a33232}.source{border-left:3px solid #3a8d80;padding-left:1rem;margin:1rem 0}footer{font-size:.8rem;color:#62777f;margin:2rem 0}
+</style></head>
+<body><header><span class="brand">careflow<span style="color:#258475">.</span></span><span class="badge" id="mode">Connecting to warehouse…</span></header>
+<h1>Explore the story<br>in your healthcare data.</h1>
+<p class="muted">Ask about utilization, recorded conditions, and medication requests. Answers include the metric definition and source behind the numbers.</p>
+<form id="form"><section><label for="question">Your question</label><textarea id="question" maxlength="1000" required placeholder="Monthly encounters in 2025-01"></textarea>
+<button id="submit" type="submit">Ask Careflow →</button>
+<div class="examples"><button type="button" data-question="Monthly encounters in 2025-01">Monthly encounters</button><button type="button" data-question="Condition prevalence for diabetes">Diabetes prevalence</button><button type="button" data-question="Medication requests by status">Medication requests</button></div>
+<p><small>Synthetic records only. This application supports analytics questions, not clinical recommendations.</small></p><p><small id="budget">Checking model usage…</small></p></section></form>
+<p id="error" role="alert"></p>
+<section id="result" hidden aria-live="polite"><p id="answer"></p><div class="scroll" id="rows"></div><div id="sources"></div>
+<details id="evidence"><summary>Query evidence</summary><pre id="query"></pre></details><p><small id="timing"></small></p></section>
+<footer>Careflow · Synthetic healthcare data platform. Results reflect the last warehouse rebuild; request time is not a data-freshness timestamp.</footer>
+<script>
+const $=id=>document.getElementById(id);
+async function refreshUsage(){try{const response=await fetch('/usage');if(!response.ok)throw Error();const usage=await response.json();$('budget').textContent=usage.mode==='baseline'?'Template mode makes no model API calls.':usage.halted?'Model calls are paused by the usage guard.':`${usage.daily.remaining_requests} model attempts remaining today (UTC) · ${usage.lifetime.remaining_requests} remaining in this workspace · ${usage.daily.remaining_tokens.toLocaleString()} reserved-token allowance remaining today`;}catch{$('budget').textContent='Usage information unavailable; live requests require a working usage ledger.'}}
+refreshUsage();
+fetch('/health').then(r=>{if(!r.ok)throw Error();return r.json()}).then(d=>{$('mode').textContent=d.mode==='llm'?'LLM planner · warehouse available':'Template mode · no LLM'}).catch(()=>{$('mode').textContent='Warehouse unavailable'});
+document.querySelectorAll('[data-question]').forEach(button=>button.addEventListener('click',()=>{$('question').value=button.dataset.question;$('form').requestSubmit()}));
+$('form').addEventListener('submit',async event=>{event.preventDefault();$('submit').disabled=true;$('error').textContent='';$('result').hidden=true;
+try{const response=await fetch('/ask',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({question:$('question').value})});const data=await response.json();if(!response.ok)throw Error(typeof data.detail==='string'?data.detail:'Please check your question.');
+$('answer').textContent=data.answer;$('rows').replaceChildren();$('sources').replaceChildren();
+if(data.rows.length){const table=document.createElement('table'),head=document.createElement('thead'),tr=document.createElement('tr');const keys=Object.keys(data.rows[0]);keys.forEach(key=>{const th=document.createElement('th');th.textContent=key.replaceAll('_',' ');tr.append(th)});head.append(tr);table.append(head);const body=document.createElement('tbody');data.rows.forEach(row=>{const line=document.createElement('tr');keys.forEach(key=>{const cell=document.createElement('td');const value=row[key];cell.textContent=value===null?'Unavailable':typeof value==='number'?new Intl.NumberFormat(undefined,key==='prevalence_fraction'?{style:'percent',maximumFractionDigits:1}:{maximumFractionDigits:2}).format(value):String(value);line.append(cell)});body.append(line)});table.append(body);$('rows').append(table)}
+data.citations.forEach(source=>{const box=document.createElement('div');box.className='source';const title=document.createElement('strong');title.textContent=source.title;const definition=document.createElement('p');definition.textContent=source.definition;const relation=document.createElement('small');relation.textContent='Source: '+source.relation;const list=document.createElement('ul');source.limitations.forEach(l=>{const li=document.createElement('li');li.textContent=l;list.append(li)});box.append(title,definition,relation,list);$('sources').append(box)});
+$('evidence').hidden=!data.query;$('query').textContent=data.query?data.query.sql+'\n\nParameters: '+JSON.stringify(data.query.parameters,null,2):'';$('timing').textContent=`${data.mode==='baseline'?'Template mode':'LLM planner'} · ${data.timing_ms.total.toFixed(0)} ms · ${data.usage.input_tokens+data.usage.output_tokens} model tokens`;$('result').hidden=false;
+}catch(error){$('error').textContent=error.message}finally{$('submit').disabled=false;refreshUsage()}});
+</script></body></html>

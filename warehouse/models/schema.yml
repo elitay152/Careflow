@@ -1,0 +1,79 @@
+version: 2
+models:
+  - name: dim_patients
+    description: One row per synthetic patient; no names or contact information.
+    columns:
+      - name: patient_id
+        data_tests: [not_null, unique]
+      - name: birth_date
+        data_tests: [not_null]
+      - name: gender
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [male, female, other, unknown]
+  - name: fct_encounters
+    description: One row per encounter. Duration is elapsed minutes; unfinished durations may be null.
+    columns:
+      - name: encounter_id
+        data_tests: [not_null, unique]
+      - name: patient_id
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_patients')
+                field: patient_id
+      - name: encounter_month
+        data_tests: [not_null]
+  - name: fct_conditions
+    description: One row per Condition resource, retaining terminology system and code.
+    columns:
+      - name: condition_id
+        data_tests: [not_null, unique]
+      - name: patient_id
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_patients')
+                field: patient_id
+      - name: code
+        data_tests: [not_null]
+      - name: code_system
+        data_tests: [not_null]
+  - name: fct_medication_requests
+    description: One row per prescription request, not a dispensing or adherence event.
+    columns:
+      - name: medication_request_id
+        data_tests: [not_null, unique]
+      - name: patient_id
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_patients')
+                field: patient_id
+      - name: code
+        data_tests: [not_null]
+      - name: code_system
+        data_tests: [not_null]
+  - name: mart_monthly_utilization
+    description: Finished encounter counts and distinct patients per UTC start month.
+    columns:
+      - name: encounter_month
+        data_tests: [not_null, unique]
+      - name: encounter_count
+        data_tests: [not_null]
+      - name: unique_patients
+        data_tests: [not_null]
+  - name: mart_condition_prevalence
+    description: Distinct patients with confirmed active conditions divided by all loaded patients; current snapshot only.
+    columns:
+      - name: code
+        data_tests: [not_null]
+      - name: code_system
+        data_tests: [not_null]
+      - name: prevalence_fraction
+        data_tests: [not_null]

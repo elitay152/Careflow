@@ -1,0 +1,13 @@
+{
+  "name": "Careflow healthcare analytics",
+  "dockerComposeFile": "compose.yaml",
+  "service": "workspace",
+  "workspaceFolder": "/workspaces/careflow",
+  "remoteUser": "vscode",
+  "forwardPorts": [8000, 3000],
+  "portsAttributes": {
+    "8000": {"label": "Careflow assistant", "onAutoForward": "notify"},
+    "3000": {"label": "Dagster", "onAutoForward": "silent"}
+  },
+  "postCreateCommand": "bash scripts/bootstrap.sh --existing-database"
+}
