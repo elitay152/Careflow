@@ -23,7 +23,8 @@ def test_export_rejects_untrusted_schema_identifiers(value):
 
 def test_archive_copies_only_aggregate_allowlist(tmp_path):
     source = json.loads((Path(__file__).parents[1] / "docs/validation-results.json").read_text())
-    source["secret"] = "private-value-must-not-export"
+    # Deliberately fake sentinel: unknown private fields must never be copied.
+    source["secret"] = "private-value-must-not-export"  # pragma: allowlist secret
     source["database_counts"]["patient_ids"] = ["private-patient"]
     path = tmp_path / "archived.json"
     path.write_text(json.dumps(source))
