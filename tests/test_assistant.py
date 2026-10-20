@@ -120,7 +120,7 @@ def service():
 
 def test_api_answers_cites_and_exposes_query(service):
     assistant, _, _ = service
-    with TestClient(create_app(assistant)) as client:
+    with TestClient(create_app(assistant), base_url="http://localhost") as client:
         assert "Ask Careflow" in client.get("/").text
         assert client.get("/health").json()["status"] == "ok"
         assert client.get("/usage").json() == {"mode":"baseline","model_calls_enabled":False}
@@ -207,7 +207,7 @@ def test_unsupported_questions_do_not_execute_sql(service, question):
 
 def test_api_rejects_oversized_blank_and_extra_input(service):
     assistant, _, _ = service
-    with TestClient(create_app(assistant)) as client:
+    with TestClient(create_app(assistant), base_url="http://localhost") as client:
         for body in ({"question": " "}, {"question": "x" * 1001}, {"question": "monthly encounters", "sql": "DROP TABLE patients"}):
             assert client.post("/ask", json=body).status_code == 422
 
@@ -215,7 +215,75 @@ def test_api_rejects_oversized_blank_and_extra_input(service):
 def test_api_provider_error_does_not_expose_credentials(service):
     assistant, _, _ = service
     failing = Assistant(assistant.engine, mock_planner({}, status_code=401), assistant.schema)
-    with TestClient(create_app(failing)) as client:
+    with TestClient(create_app(failing), base_url="http://localhost") as client:
         response = client.post("/ask", json={"question": "monthly encounters"})
         assert response.status_code == 502
         assert "test-only-key" not in response.text
+
+
+@pytest.mark.parametrize("host", ["attacker.example", "localhost.attacker.example"])
+def test_untrusted_host_is_rejected_before_model_call(host):
+    engine = create_engine("sqlite://")
+    planner = OpenAIPlanner("test-only-key", transport=httpx.MockTransport(
+        lambda request: pytest.fail("Untrusted hosts must not reach the provider")))
+    try:
+        with TestClient(create_app(Assistant(engine, planner)), base_url=f"http://{host}") as client:
+            assert client.post("/ask", json={"question": "monthly encounters"}).status_code == 400
+            assert client.get("/health").status_code == 400
+        assert planner.ledger.snapshot()["lifetime"]["attempts"] == 0
+    finally:
+        engine.dispose()
+
+
+def test_private_forwarded_host_requires_explicit_configuration(monkeypatch):
+    monkeypatch.setenv("CAREFLOW_ALLOWED_HOSTS", "localhost,my-workspace.app.github.dev")
+    engine = create_engine("sqlite://")
+    try:
+        with TestClient(create_app(Assistant(engine, BaselinePlanner())),
+                        base_url="https://my-workspace.app.github.dev") as client:
+            assert client.get("/usage").status_code == 200
+    finally:
+        engine.dispose()
+
+
+@pytest.mark.parametrize("hosts", ["*", "*.app.github.dev", "", "https://localhost"])
+def test_host_configuration_cannot_disable_protection(monkeypatch, hosts):
+    monkeypatch.setenv("CAREFLOW_ALLOWED_HOSTS", hosts)
+    with pytest.raises(ValueError, match="exact hostnames"):
+        create_app()
+
+
+def test_reader_reuse_rejects_set_role_membership(service):
+    assistant, admin, role = service
+    granted_role = "audit_grant_" + uuid.uuid4().hex[:16]
+    try:
+        with admin.begin() as connection:
+            connection.execute(text(f'CREATE ROLE "{granted_role}" NOLOGIN'))
+            connection.execute(text(f'GRANT SELECT ON "{assistant.schema}".raw_patients TO "{granted_role}"'))
+            connection.execute(text(f'GRANT USAGE ON SCHEMA "{assistant.schema}" TO "{granted_role}"'))
+            connection.execute(text(f'GRANT "{granted_role}" TO "{role}"'))
+        # Prove why NOINHERIT alone is insufficient: SET ROLE enables raw reads.
+        with assistant.engine.begin() as connection:
+            connection.execute(text(f'SET LOCAL ROLE "{granted_role}"'))
+            connection.execute(text(f'SELECT * FROM "{assistant.schema}".raw_patients')).all()
+        with pytest.raises(ValueError, match="cannot be adopted"):
+            configure_reader(admin.url, assistant.schema, role,
+                             assistant.engine.url.render_as_string(hide_password=False))
+    finally:
+        with admin.begin() as connection:
+            connection.execute(text(f'REVOKE "{granted_role}" FROM "{role}"'))
+            connection.execute(text(f'DROP OWNED BY "{granted_role}"'))
+            connection.execute(text(f'DROP ROLE "{granted_role}"'))
+
+
+def test_reader_reuse_rejects_inheritance(service):
+    assistant, admin, role = service
+    try:
+        with admin.begin() as connection:
+            connection.execute(text(f'ALTER ROLE "{role}" INHERIT'))
+        with pytest.raises(ValueError, match="cannot be adopted"):
+            configure_reader(admin.url, assistant.schema, role,
+                             assistant.engine.url.render_as_string(hide_password=False))
+    finally:
+        with admin.begin() as connection:
+            connection.execute(text(f'ALTER ROLE "{role}" NOINHERIT'))

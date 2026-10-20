@@ -8,6 +8,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 from sqlalchemy import create_engine
 from sqlalchemy.engine import make_url
 from sqlalchemy.exc import SQLAlchemyError
+from starlette.middleware.trustedhost import TrustedHostMiddleware
 
 from .assistant import Assistant, BaselinePlanner, CATALOG
 from .llm import OpenAIPlanner, PlannerUnavailable
@@ -54,6 +55,14 @@ def create_app(assistant=None):
                 app.state.assistant.engine.dispose()
 
     app = FastAPI(title="Careflow analytics assistant", version="0.3.0", lifespan=lifespan)
+    # Loopback binding alone does not stop browser DNS rebinding. Hosted private
+    # development tunnels must opt in to their exact forwarded hostname.
+    hosts = [host.strip() for host in os.getenv(
+        "CAREFLOW_ALLOWED_HOSTS", "localhost,127.0.0.1,[::1]"
+    ).split(",") if host.strip()]
+    if not hosts or any("*" in host or "/" in host for host in hosts):
+        raise ValueError("CAREFLOW_ALLOWED_HOSTS requires exact hostnames without wildcards or paths")
+    app.add_middleware(TrustedHostMiddleware, allowed_hosts=hosts, www_redirect=False)
 
     @app.get("/", response_class=HTMLResponse, include_in_schema=False)
     def index():
