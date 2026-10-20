@@ -1,0 +1,61 @@
+name: Live assistant smoke test (one API request)
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: careflow-live-api
+  cancel-in-progress: false
+jobs:
+  live-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:16.13
+        env:
+          POSTGRES_USER: careflow
+          POSTGRES_PASSWORD: ci-only-password
+          POSTGRES_DB: careflow
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U careflow -d careflow"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      DATABASE_URL: postgresql+psycopg://careflow:ci-only-password@localhost:5432/careflow
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check GitHub Actions secret is configured
+        env:
+          CAREFLOW_LLM_API_KEY: ${{ secrets.CAREFLOW_LLM_API_KEY }}
+        run: |
+          if [[ -z "${CAREFLOW_LLM_API_KEY:-}" ]]; then
+            echo 'Add CAREFLOW_LLM_API_KEY in repository Settings > Secrets and variables > Actions.' >&2
+            exit 1
+          fi
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Build the demo and reader without model calls
+        run: bash scripts/bootstrap.sh --existing-database
+      - name: Run exactly one guarded live case
+        env:
+          CAREFLOW_LLM_API_KEY: ${{ secrets.CAREFLOW_LLM_API_KEY }}
+          CAREFLOW_LLM_MODEL: gpt-4.1-mini
+        run: |
+          set -a
+          . ./.env
+          set +a
+          .venv/bin/python -m careflow.evaluate --mode llm --suite core --max-cases 1 --output data/evaluation/live-smoke.json
+      - name: Record local usage without another API call
+        if: always()
+        run: |
+          if [[ -x .venv/bin/careflow ]]; then
+            mkdir -p data/evaluation
+            .venv/bin/careflow usage > data/evaluation/usage.json
+          fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: live-assistant-results
+          path: data/evaluation/

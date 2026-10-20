@@ -1,0 +1,42 @@
+name: Pipeline tests
+on: [push, pull_request]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16.13
+        env:
+          POSTGRES_USER: careflow
+          POSTGRES_PASSWORD: ci-only-password
+          POSTGRES_DB: careflow
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U careflow -d careflow"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: bash scripts/install.sh
+      - run: .venv/bin/pytest -q
+      - run: .venv/bin/pytest -q
+        env:
+          TEST_DATABASE_URL: postgresql+psycopg://careflow:ci-only-password@localhost:5432/careflow
+      - name: Execute orchestrated pipeline
+        run: |
+          .venv/bin/careflow generate-demo --extended
+          bash scripts/run_pipeline.sh
+        env:
+          DATABASE_URL: postgresql+psycopg://careflow:ci-only-password@localhost:5432/careflow
+      - name: Evaluate baseline assistant and reader grant refresh
+        run: |
+          .venv/bin/python scripts/configure_assistant.py
+          set -a
+          . ./.env
+          set +a
+          .venv/bin/careflow warehouse-build
+          .venv/bin/python -m careflow.evaluate --mode baseline --suite core --output data/evaluation/ci-baseline-core.json
+        env:
+          DATABASE_URL: postgresql+psycopg://careflow:ci-only-password@localhost:5432/careflow

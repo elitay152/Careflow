@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=75"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "careflow"
+version = "0.1.0"
+description = "A synthetic FHIR ingestion platform for healthcare analytics"
+requires-python = ">=3.11"
+dependencies = ["SQLAlchemy==2.0.46", "psycopg[binary]==3.2.13"]
+
+[project.optional-dependencies]
+dev = ["pytest==9.0.2", "fastapi==0.115.12", "httpx==0.28.1"]
+analytics = ["dbt-postgres==1.9.1", "dbt-core==1.10.13", "dagster==1.12.0", "dagster-webserver==1.12.0"]
+assistant = ["fastapi==0.115.12", "httpx==0.28.1", "uvicorn==0.34.2"]
+
+[project.scripts]
+careflow = "careflow.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+careflow = ["metric_catalog.json", "assistant_ui.html"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

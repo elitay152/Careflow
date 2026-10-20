@@ -1,0 +1,47 @@
+[
+  {
+    "id": "monthly_encounters",
+    "title": "Monthly finished encounters",
+    "definition": "Number of encounters with status finished, grouped by UTC start month.",
+    "keywords": "monthly encounters visits utilization count finished hospital",
+    "relation": "mart_monthly_utilization",
+    "column": "encounter_count",
+    "limitations": ["Other encounter statuses are excluded.", "Months with no finished encounters are absent."]
+  },
+  {
+    "id": "monthly_patients",
+    "title": "Monthly distinct patients",
+    "definition": "Distinct patients with a finished encounter, counted once in each UTC start month.",
+    "keywords": "monthly unique distinct patients people visits",
+    "relation": "mart_monthly_utilization",
+    "column": "unique_patients",
+    "limitations": ["A patient can appear in multiple months; summing these counts is not a distinct population count."]
+  },
+  {
+    "id": "mean_encounter_duration",
+    "title": "Mean encounter duration by month",
+    "definition": "Mean elapsed minutes from start to end among finished encounters in each UTC start month.",
+    "keywords": "mean average duration minutes encounter length monthly",
+    "relation": "mart_monthly_utilization",
+    "column": "average_duration_minutes",
+    "limitations": ["Null end timestamps are excluded from the mean.", "Encounter duration is not necessarily hospital length of stay."]
+  },
+  {
+    "id": "condition_prevalence",
+    "title": "Recorded condition prevalence",
+    "definition": "Distinct patients with a confirmed active, recurrent, or relapsed condition divided by all loaded patients, grouped by terminology system and code. An optional filter matches the condition name.",
+    "keywords": "condition prevalence common diabetes hypertension diagnosis proportion percent",
+    "relation": "mart_condition_prevalence",
+    "column": "prevalence_fraction",
+    "limitations": ["This is a current recorded snapshot, not historical population prevalence.", "The denominator includes all loaded patients, including deceased patients.", "Unknown verification, refuted, error, and inactive conditions are excluded.", "Name filters are literal substring matches, not clinical concept sets; condition groups can overlap."]
+  },
+  {
+    "id": "medication_requests",
+    "title": "Medication requests by status",
+    "definition": "Number of MedicationRequest resources grouped by request status; includes all statuses.",
+    "keywords": "medication medications prescription prescriptions drug requests count status",
+    "relation": "fct_medication_requests",
+    "column": "status",
+    "limitations": ["Requests do not establish dispensing, administration, or adherence.", "Date and drug-name filters are not supported by this assistant yet."]
+  }
+]
