@@ -12,6 +12,7 @@ from pathlib import Path
 import platform
 import re
 import sys
+from statistics import median
 from time import perf_counter
 
 from sqlalchemy import create_engine, select, text
@@ -88,6 +89,12 @@ def check_warehouse(engine, schema, resources):
             actual_average = actual["average_duration_minutes"]
             if (average is None) != (actual_average is None) or (average is not None and abs(float(actual_average) - average) > 1e-6):
                 issues.append(f"Duration average differs for {month}")
+            expected_median = median(expected["minutes"]) if expected["minutes"] else None
+            observed_median = actual["median_duration_minutes"]
+            if (expected_median is None) != (observed_median is None) or (expected_median is not None and abs(float(observed_median) - expected_median) > 1e-6):
+                issues.append(f"Duration median differs for {month}")
+            if actual["measured_duration_count"] != len(expected["minutes"]):
+                issues.append(f"Measured duration count differs for {month}")
         observed_prevalence = {(row["code_system"], row["code"]): row for row in connection.execute(
             text(f"select * from {quoted}.mart_condition_prevalence")).mappings()}
         if set(observed_prevalence) != set(prevalence):
