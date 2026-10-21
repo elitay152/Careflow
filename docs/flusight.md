@@ -53,7 +53,8 @@ This is a retrospective benchmark of a pinned revised dataset, not historical
 release vintages. Origins assume observations are available at week end;
 publication delays are not replayed. Coverage and reporting changes can affect
 counts. Overlapping horizons produce correlated errors, there is only one held-out
-season, and no uncertainty intervals are estimated. Results do not establish
+season. The separate residual-band experiment below adds retrospective interval
+diagnostics; results do not establish
 operational planning performance.
 
 ## Peak error analysis
@@ -79,6 +80,50 @@ locates errors without establishing their cause. It was added after inspecting
 holdout results and is descriptive, not a fresh independent test or a tuned model
 setting. Period lengths differ; error shares should be read alongside MAE and
 week counts. No models, selection scores, or publication decisions are changed.
+
+## Prediction interval experiment
+
+[config/flusight-interval-protocol.json](../config/flusight-interval-protocol.json)
+fixes nominal levels of 80% and 95%, the calibration cutoff, quantile rule, rounding,
+and metrics. It was committed before computing interval coverage, after the point
+holdout results had already been inspected. The point-model protocol is unchanged.
+This is a retrospective experiment, not a new untouched holdout test.
+
+For each of the four fixed models and horizons, calibration uses 102 earlier
+weekly absolute errors from the existing validation predictions, July 1, 2023
+through June 7, 2025. The last three validation target weeks are excluded so the
+cutoff is no later than the earliest holdout forecast origin (four weeks before
+July 5). This timing constraint applies to calibration radii; it does not turn
+the existing retrospective model-selection process into a historical deployment.
+Earlier seasons also informed model selection, and errors are temporally dependent.
+There is no exchangeability or guaranteed-coverage claim.
+
+The radius is sorted absolute error at one-based rank `ceil((n+1)*level/100)`:
+rank 83 for 80%, rank 98 for 95%. Radii do not adapt to holdout outcomes. Bounds
+are `max(0, floor(point-radius))` and `ceil(point+radius)`; endpoints count as
+covered. Width therefore varies when the lower bound is clipped at zero.
+
+| Selected-model horizon | 80% coverage | Mean width | 95% coverage | Mean width |
+| --- | ---: | ---: | ---: | ---: |
+| 1 week | 78.8% | 4,940 | 90.4% | 13,826 |
+| 2 weeks | 76.9% | 6,119 | 90.4% | 18,124 |
+| 3 weeks | 73.1% | 6,639 | 88.5% | 20,055 |
+| 4 weeks | 76.9% | 9,490 | 88.5% | 22,253 |
+
+Widths are admissions; each row evaluates 52 correlated target weeks. The simple
+bands under-cover their nominal levels, particularly around the peak. The website
+exposes width, coverage, lower/upper misses, a persistence comparison, and peak-period
+coverage instead of asserting the nominal level was achieved. Nominal levels do
+not give a guaranteed probability for an individual week.
+
+The export includes the interval protocol and SHA-256, calibration counts and
+quantile ranks, radii, and pooled/peak-period metrics. The frontend contract
+independently recomputes these from validated earlier predictions and holdout
+observations. Mean interval score is width plus `2/alpha` times the distance
+outside the appropriate bound, averaged across target weeks (`alpha=1-level/100`).
+Lower scores are better at the same nominal level and on the same weeks. Empty
+period metrics are null. Bands describe the rolling holdout predictions only;
+no future intervals are exported and the existing publication gate is unchanged.
 
 ## Attribution and reuse basis
 

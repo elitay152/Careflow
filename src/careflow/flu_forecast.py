@@ -12,6 +12,7 @@ import tempfile
 from urllib.request import urlopen
 
 from .forecast import score
+from .flu_intervals import build_intervals
 
 ROOT = Path(__file__).resolve().parents[2]
 PROTOCOL_PATH = ROOT / "config/flusight-protocol.json"
@@ -340,6 +341,7 @@ def evaluate(history, protocol):
             ),
         },
         "forecast": future,
+        "intervals": build_intervals(validation, held, protocol),
     }
 
 
@@ -383,7 +385,7 @@ def build_artifact(raw, protocol):
             "Origins assume observations are available at week end; publication delays are not replayed.",
             "Horizon/weekly errors overlap and are correlated; this is one held-out season.",
             "These are reported influenza admissions, not unique patients or all-cause facility demand.",
-            "Point forecasts have no estimated uncertainty intervals and are not an operational planning service.",
+            "Residual bands are a retrospective experiment with no guaranteed coverage; this is not an operational planning service.",
         ],
     }
 
