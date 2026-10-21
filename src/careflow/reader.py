@@ -17,9 +17,11 @@ def configure_reader(admin_url, schema="analytics", role="careflow_reader", exis
     password = secrets.token_urlsafe(32)
     reader_url = url.set(username=role, password=password)
     with psycopg.connect(url.set(drivername="postgresql").render_as_string(hide_password=False)) as connection:
-        exists = connection.execute("SELECT rolsuper, rolcreatedb, rolcreaterole, rolbypassrls, rolreplication FROM pg_roles WHERE rolname=%s", (role,)).fetchone()
+        exists = connection.execute("SELECT rolsuper, rolcreatedb, rolcreaterole, rolbypassrls, rolreplication, rolinherit FROM pg_roles WHERE rolname=%s", (role,)).fetchone()
         if exists:
-            if not existing_url or make_url(existing_url).username != role or any(exists):
+            # NOINHERIT alone does not prevent SET ROLE into a granted role.
+            memberships = connection.execute("SELECT 1 FROM pg_auth_members WHERE member=(SELECT oid FROM pg_roles WHERE rolname=%s) LIMIT 1", (role,)).fetchone()
+            if not existing_url or make_url(existing_url).username != role or any(exists) or memberships:
                 raise ValueError("Existing reader role cannot be adopted; preserve its credentials and configure it explicitly")
             reader_url = make_url(existing_url)
         else:

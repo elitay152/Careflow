@@ -74,6 +74,14 @@ Warehouse rows and database credentials are not sent to the model. Provider fail
 
 The API binds to loopback and has no user authentication or rate limiting. This version is for local portfolio development with synthetic data. A shared deployment needs authentication, request budgets, and operational configuration before exposure.
 
+The API validates the HTTP Host header to reduce DNS rebinding exposure. It accepts
+`localhost`, `127.0.0.1` and `[::1]` by default. `scripts/start_assistant.sh` also
+allows this Codespace's exact forwarded hostname when the Codespaces environment
+variables are present. For another private tunnel, set `CAREFLOW_ALLOWED_HOSTS`
+to a comma-separated list of exact hostnames, without schemes, paths or wildcards.
+Keep forwarded ports private; Host validation does not authenticate users. See
+the [security audit](security-audit.md) for tested boundaries and remaining risks.
+
 ## API
 
 - `GET /` — browser interface.

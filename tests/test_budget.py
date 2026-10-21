@@ -147,7 +147,7 @@ def test_api_budget_limit_is_429_without_model_or_database_query(tmp_path):
     p = planner(tmp_path,lambda req:pytest.fail("HTTP must not run"),Limits(daily_requests=1))
     p.ledger.reserve("gpt-4.1-mini", 100)
     engine = create_engine("sqlite://")  # Any warehouse query would fail.
-    with TestClient(create_app(Assistant(engine,p))) as client:
+    with TestClient(create_app(Assistant(engine,p)), base_url="http://localhost") as client:
         usage = client.get("/usage").json()
         assert usage["daily"]["remaining_requests"] == 0
         answer = client.post("/ask",json={"question":"monthly encounters"})
@@ -177,7 +177,7 @@ def test_baseline_does_not_create_or_consume_model_ledger(tmp_path,monkeypatch):
     ledger_path=tmp_path / "not-created.sqlite3"
     monkeypatch.setattr("careflow.llm.DEFAULT_LEDGER_PATH",ledger_path)
     engine=create_engine("sqlite://")
-    with TestClient(create_app(Assistant(engine,BaselinePlanner()))) as client:
+    with TestClient(create_app(Assistant(engine,BaselinePlanner())), base_url="http://localhost") as client:
         assert client.get("/usage").json()["model_calls_enabled"] is False
         assert client.post("/ask",json={"question":"List patient names"}).json()["status"] == "unsupported"
     assert not ledger_path.exists()

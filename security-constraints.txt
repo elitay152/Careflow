@@ -1,0 +1,4 @@
+# Patched transitive versions verified with the portfolio workflow.
+# Keep these constraints when installing any Careflow extras.
+starlette==1.9.0
+sqlparse==0.6.0
