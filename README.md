@@ -3,7 +3,9 @@
 A synthetic healthcare data platform: FHIR ingestion, PostgreSQL, a dbt warehouse,
 Dagster orchestration, a restricted analytics assistant, and statistical forecast
 evaluation and a synthetic 90-day inpatient-risk experiment. A [separate React website](https://elitay152.github.io/careflow-dashboard/)
-renders aggregate exports without database or model credentials.
+renders aggregate exports without database or model credentials. A separate
+[public influenza forecasting benchmark](docs/flusight.md) uses observed CDC/NHSN
+admissions and labels its source independently of the synthetic cohort.
 
 ```mermaid
 flowchart LR
