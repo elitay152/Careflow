@@ -10,3 +10,4 @@ sources:
       - name: medications
       - name: facilities
       - name: facility_aliases
+      - name: observations

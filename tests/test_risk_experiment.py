@@ -133,3 +133,39 @@ def test_experiment_thresholds_do_not_use_test_outcomes():
 
     with pytest.raises(ValueError, match="Patient overlap"):
         compare(changed)
+
+
+def test_clinical_comparison_handles_missing_values_without_test_fitting():
+    from careflow.clinical_features import add_measurements
+    from careflow.risk_experiment import compare
+
+    rows = []
+    for split, index in (
+        ("train", "2020-10-01"),
+        ("validation", "2022-10-01"),
+        ("test", "2024-10-01"),
+    ):
+        for i in range(100):
+            features = dict.fromkeys(FEATURES + ADDED_FEATURES, 0)
+            features["age_years"] = 20 + i
+            rows.append(
+                dict(
+                    patient_id=f"{split}-{i}",
+                    index_date=index,
+                    split=split,
+                    outcome=int(i % 10 == 0),
+                    features=features,
+                )
+            )
+    rows = add_measurements(rows, [])
+    before = compare(rows, clinical=True)
+    changed = deepcopy(rows)
+    for row in changed:
+        if row["split"] == "test":
+            row["features"]["bmi_latest"] = 99
+            row["features"]["bmi_missing"] = 0
+    after = compare(changed, clinical=True)
+    assert len(before["results"]) == 6
+    assert before["measurement_coverage"]["train"]["bmi"]["snapshots_with_value"] == 0
+    for a, b in zip(before["results"], after["results"], strict=True):
+        assert a["threshold"] == b["threshold"] and a["validation"] == b["validation"]

@@ -201,18 +201,61 @@ inspected test cohorts are development evidence; this experiment uses the origin
 internal test only and makes no fresh independent performance claim. A new seed
 must be reserved before a final comparison; patient snapshots remain correlated.
 
-On the current original cohort, original-feature boosting has development average
-precision 0.0533 versus logistic regression's 0.0393. Enriched boosting scores
-0.0334 and enriched logistic regression 0.0366. All four validation-selected
-thresholds have zero recall on the 26 positive development-test snapshots. More
-features have not demonstrated an improvement; no replacement model is published.
+Current development results use 26 positive snapshots among 853 internal-test
+snapshots. Average precision measures ranking, not accuracy. The prevalence
+baseline's average precision is 0.0305.
 
-Socioeconomic history and physiologic severity are not currently persisted.
-Source files contain dated Observations, including BMI, HbA1c, and renal-function
-measurements; using them requires explicit units, availability dates, missingness,
-and lookback rules. Patient-level lifetime DALY/QALY extensions are excluded because
-they are not dated historical measurements. Present-day demographics, addresses,
-and contextual codes must not be reinterpreted as historical income or severity.
+| Features | Model | Validation AP | Development AP |
+| --- | --- | ---: | ---: |
+| Original (9) | Logistic | 0.4167 | 0.0393 |
+| Original (9) | Boosting | 0.4106 | 0.0533 |
+| Utilization/comorbidity (25) | Logistic | 0.4200 | 0.0366 |
+| Utilization/comorbidity (25) | Boosting | 0.3851 | 0.0334 |
+| With measurements (55) | Logistic | 0.3980 | 0.0395 |
+| With measurements (55) | Boosting | 0.3586 | 0.0366 |
+
+All six validation-selected thresholds have zero development-test recall. Adding
+measurements has not improved performance; no replacement model is published.
+Measurement coverage is uneven: indexed eGFR is available in 17% of training
+snapshots and 13% of development-test snapshots; BMI and blood pressure cover
+roughly 81% of development-test snapshots. Missingness remains explicit. These
+results motivate further target/cohort/validation work, not test-driven tuning.
+
+Selected LOINC Observations persist BMI (39156-5), HbA1c (4548-4), indexed eGFR
+(33914-3), creatinine (2160-0/38483-4), and systolic/diastolic pressure
+(8480-6/8462-4, standalone or in panel 85354-9). Quantity codes must use UCUM:
+kg/m2, %, mL/min/{1.73_m2}, mg/dL, and mm[Hg], respectively. Creatinine in umol/L
+is divided by 88.4; original units remain in provenance. Unknown units, censored
+quantities, ambiguous supported codes, invalid dates, and duplicate pressure
+components are quarantined. Nonstandard JSON NaN/Infinity fails the file before
+any writes. Explicit absent results persist without a measurement value.
+
+A source inconsistency uses eGFR's indexed LOINC code with plain mL/min. These
+quantities remain separately labeled `egfr_unindexed_unit`, preserving their unit;
+they do not become indexed eGFR or model features. Values are not filtered merely
+for being extreme. This subset validates format/units, not clinical plausibility.
+
+The `clinical` feature set adds 30 fields to the earlier 25: latest value,
+measurement age in days, missing flag, 90-day-scaled change, and trend-missing flag
+for six measurement types. A result needs final status, a full effective timestamp,
+and an issued timestamp. Availability is the later timestamp, strictly before the
+snapshot; measurement time must also precede the snapshot and be within 365 days.
+Missing issued dates and amended/corrected records cannot supply historical values.
+The trend uses the latest eligible value and the most recent earlier measurement
+at least 30 days before it, both within the lookback. Timestamp ties are resolved
+by issuance and resource ID. No measurements from subsequent visits enter features.
+Creatinine blood/serum codes are combined only for this synthetic experiment.
+
+Missing numeric feature values remain null until model preprocessing. Logistic regression and
+boosting each fit a median imputer on training rows only; entirely missing training
+columns use zero, while explicit missingness flags remain available. Standardization
+for logistic regression is also training-only. The comparison reports coverage by
+measurement and split. These measurements are predictors, not a validated illness
+severity score. Observation values and patient-level features are never public.
+
+Socioeconomic history is unavailable. Patient-level lifetime DALY/QALY extensions
+remain excluded because they are not dated historical measurements. Present-day
+addresses and contextual codes must not be reinterpreted as historical income.
 
 TabPFN is opt-in, local, and isolated from the application environment. The v2
 experiment uses `tabpfn==2.2.1`, two estimators, CPU inference, and 1,000 training
@@ -227,7 +270,7 @@ execute code during deserialization.
 ```bash
 .venv/bin/python -m careflow.risk_experiment --confirm-synthetic \
   --raw-schema synthea_p1000_seed43 --observation-end 2025-01-01 \
-  --output data/risk/model-comparison/boosting.json
+  --output data/risk/model-comparison/clinical.json
 ```
 
 Use a separate virtual environment for TabPFN: its scikit-learn requirements

@@ -21,6 +21,7 @@ from .risk_public import load_public_risk
 
 
 TABLES = ("patients", "encounters", "conditions", "medications", "loads", "quarantine")
+CURRENT_TABLES = (*TABLES, "observations")
 FHIR_TYPES = (
     "AllergyIntolerance", "CarePlan", "CareTeam", "Claim", "Condition", "Device",
     "DiagnosticReport", "DocumentReference", "Encounter", "ExplanationOfBenefit",
@@ -111,7 +112,7 @@ def export_public_snapshot(engine, output, *, raw_schema="public", analytics_sch
     raw, warehouse = identifier(raw_schema), identifier(analytics_schema)
     with readonly(engine) as connection:
         connection.execute(text("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ"))
-        counts = {table: connection.scalar(text(f'SELECT count(*) FROM {raw}."{table}"')) for table in TABLES}
+        counts = {table: connection.scalar(text(f'SELECT count(*) FROM {raw}."{table}"')) for table in CURRENT_TABLES}
         loaded_at = connection.scalar(text(f"SELECT max(loaded_at) FROM {raw}.loads"))
         def rows(sql):
             return [{key: json_value(value) for key, value in row.items()}
@@ -142,7 +143,7 @@ def export_public_snapshot(engine, output, *, raw_schema="public", analytics_sch
         )}})
     forecast = evaluate_forecast(monthly)
     snapshot = {
-        "schema_version": 7, "synthetic_only": True,
+        "schema_version": 8, "synthetic_only": True,
         "exported_at": datetime.now(timezone.utc).isoformat(),
         "current": {"label": cohort_label, "raw_schema": raw_schema,
                     "analytics_schema": analytics_schema, "source_loaded_at": loaded_at,
