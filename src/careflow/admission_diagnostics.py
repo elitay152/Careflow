@@ -2,7 +2,7 @@
 
 import argparse
 from collections import Counter, defaultdict
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 import hashlib
 import json
 import math
@@ -227,14 +227,6 @@ def evaluate_fold(train, calibration, score, *, bootstrap=False):
     ids = [{r["patient_id"] for r in group} for group in groups]
     if any(ids[i] & ids[j] for i, j in ((0, 1), (0, 2), (1, 2))):
         raise ValueError("Patient overlap across fold roles")
-    if (
-        not all(groups)
-        or not max(r["index_date"] for r in train)
-        < min(r["index_date"] for r in calibration)
-        or not max(r["index_date"] for r in calibration)
-        < min(r["index_date"] for r in score)
-    ):
-        raise ValueError("Fold roles must be chronological and nonempty")
     roles = {
         role: {
             "snapshots": len(group),
@@ -251,6 +243,19 @@ def evaluate_fold(train, calibration, score, *, bootstrap=False):
         for role, counts in roles.items()
         if counts["positive_patients"] < (50 if role == "train" else 10)
     ]
+    if not all(groups):
+        return {
+            "status": "insufficient_data",
+            "roles": roles,
+            "warnings": warnings,
+            "models": [],
+        }
+    if not max(r["index_date"] for r in train) < min(
+        r["index_date"] for r in calibration
+    ) or not max(r["index_date"] for r in calibration) < min(
+        r["index_date"] for r in score
+    ):
+        raise ValueError("Fold roles must be chronological")
     if any({r["outcome"] for r in group} != {0, 1} for group in groups):
         return {
             "status": "insufficient_outcomes",
@@ -411,7 +416,17 @@ def rolling_diagnostics(rows):
     }
 
 
-def run(engine, schema, output):
+def validate_cutoff(value):
+    parsed = date.fromisoformat(value)
+    if parsed.isoformat() != value or parsed < date(2025, 1, 1):
+        raise ValueError(
+            "This fixed protocol requires an attested ISO observation cutoff on or after 2025-01-01"
+        )
+    return value
+
+
+def run(engine, schema, observation_end, output):
+    validate_cutoff(observation_end)
     root = Path(output).resolve()
     if (
         PRIVATE_ROOT.resolve() != PRIVATE_ROOT
@@ -442,9 +457,11 @@ def run(engine, schema, output):
         )
         loaded = connection.scalar(text(f'SELECT max(loaded_at) FROM "{schema}".loads'))
     rows, summary = make_snapshots(
-        patients, encounters, conditions, "2025-01-01", all_periods=True
+        patients, encounters, conditions, observation_end, all_periods=True
     )
-    original, _ = make_snapshots(patients, encounters, conditions, "2025-01-01")
+    original, original_summary = make_snapshots(
+        patients, encounters, conditions, observation_end
+    )
     episodes, mix = episode_inventory(patients, encounters)
     source_labels = defaultdict(set)
     for condition in conditions:
@@ -460,9 +477,10 @@ def run(engine, schema, output):
         "evaluated_at": datetime.now(timezone.utc).isoformat(),
         "source_loaded_at": loaded,
         "source_schema": schema,
-        "observation_end": "2025-01-01",
+        "observation_end": observation_end,
         "evaluation_role": "development_only",
         "input_sha256": summary["input_sha256"],
+        "original_protocol_input_sha256": original_summary["input_sha256"],
         "context_input_sha256": hashlib.sha256(
             json.dumps(
                 {"patients": patients, "encounters": encounters},
@@ -483,9 +501,20 @@ def main():
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--confirm-synthetic", action="store_true", required=True)
     p.add_argument("--raw-schema", required=True)
+    p.add_argument(
+        "--observation-end",
+        required=True,
+        type=validate_cutoff,
+        help="Attest the exclusive synthetic observation cutoff",
+    )
     p.add_argument("--output", required=True)
     a = p.parse_args()
-    run(create_engine(os.environ["DATABASE_URL"]), a.raw_schema, a.output)
+    run(
+        create_engine(os.environ["DATABASE_URL"]),
+        a.raw_schema,
+        a.observation_end,
+        a.output,
+    )
     print(
         "Aggregate development investigation written under ignored data/risk; no public exports changed."
     )

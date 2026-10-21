@@ -134,3 +134,15 @@ def test_all_periods_retains_history_without_changing_default_protocol():
         make_snapshots(patients, [visit], [], "2025-01-01")[1]["input_sha256"]
         == summary["input_sha256"]
     )
+
+
+def test_cutoff_attestation_and_empty_cohorts_are_explicit():
+    from careflow.admission_diagnostics import validate_cutoff
+
+    assert validate_cutoff("2025-01-01") == "2025-01-01"
+    for value in ("2024-12-31", "20250101", "invalid"):
+        with pytest.raises(ValueError):
+            validate_cutoff(value)
+    result = evaluate_fold([], [], [])
+    assert result["status"] == "insufficient_data" and result["models"] == []
+    assert result["roles"]["calibration"]["positive_patients"] == 0

@@ -316,7 +316,8 @@ these results do not establish useful clinical prediction.
 
 ```bash
 .venv/bin/python -m careflow.admission_diagnostics --confirm-synthetic \
-  --raw-schema synthea_p1000_seed43 --output data/risk/admission-diagnostics/summary.json
+  --raw-schema synthea_p1000_seed43 --observation-end 2025-01-01 \
+  --output data/risk/admission-diagnostics/summary.json
 ```
 
 Synthea is rule-based and stochastic. Its pinned 3.3.0
