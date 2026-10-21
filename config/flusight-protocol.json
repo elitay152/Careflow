@@ -1,0 +1,29 @@
+{
+  "protocol": "flusight_us_v1",
+  "target": "Weekly reported laboratory-confirmed influenza hospital admissions",
+  "location": "US",
+  "source": {
+    "repository": "https://github.com/cdcepi/FluSight-forecast-hub",
+    "revision": "ff95b0fd9883aa15f4ce3f6e46830973f905ffd1",
+    "path": "target-data/target-hospital-admissions.csv",
+    "sha256": "c76871f32411c6dc68c461fd3a0599954d1bc7720eaeda3695015f1de6ec8c5d",
+    "first_week": "2022-02-05",
+    "last_week": "2026-10-17"
+  },
+  "models": ["last_value", "seasonal_naive", "damped_growth", "seasonal_autoreg"],
+  "horizons": [1, 2, 3, 4],
+  "validation": [
+    {"season": "2023/24", "start": "2023-07-01", "end": "2024-06-29"},
+    {"season": "2024/25", "start": "2024-07-06", "end": "2025-06-28"}
+  ],
+  "holdout": {"season": "2025/26", "start": "2025-07-05", "end": "2026-06-27"},
+  "minimum_history_weeks": 64,
+  "autoregression_window_weeks": 104,
+  "ridge_alpha": 10,
+  "growth_window_weeks": 4,
+  "growth_log_slope_bound": 0.25,
+  "growth_damping": 0.8,
+  "selection": "Lowest pooled validation MAE; ties follow model order",
+  "publication_gate": "Validation winner must strictly beat both last_value and seasonal_naive on pooled holdout MAE",
+  "evaluation_role": "Retrospective rolling-origin evaluation using a pinned revised dataset; not real-time vintage validation"
+}
