@@ -45,3 +45,7 @@ jobs:
           .venv/bin/python -m careflow.evaluate --mode baseline --suite core --output data/evaluation/ci-baseline-core.json
         env:
           DATABASE_URL: postgresql+psycopg://careflow:ci-only-password@localhost:5432/careflow
+      - name: Verify the isolated portfolio demo
+        run: bash scripts/portfolio_demo.sh
+        env:
+          DATABASE_URL: postgresql+psycopg://careflow:ci-only-password@localhost:5432/careflow

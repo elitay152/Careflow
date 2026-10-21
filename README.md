@@ -7,6 +7,10 @@ renders aggregate exports without database or model credentials. A separate
 [public influenza forecasting benchmark](docs/flusight.md) uses observed CDC/NHSN
 admissions and labels its source independently of the synthetic cohort.
 
+**Start here:** [three-minute walkthrough and reproducible demo](docs/demo.md).
+The website runs from committed aggregate snapshots; the small PostgreSQL demo
+uses fresh schemas and verifies quarantine, safe reruns, and all 49 dbt checks.
+
 ```mermaid
 flowchart LR
     A[Synthetic FHIR bundles] --> B[Validation and transactional ingestion]
