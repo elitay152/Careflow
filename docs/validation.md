@@ -10,13 +10,17 @@ January 1, 2025. Deceased histories increase the actual patient count.
 | Encounter | 95,852 |
 | Condition | 48,406 |
 | MedicationRequest | 85,333 |
-| **Total** | **230,785** |
+| Organization | 852 |
+| **Total** | **231,637** |
 
 The cohort has 1,196 JSON Bundles, 2,031,315 source resources, and approximately
 5.41 GiB of raw files. Validation found zero quarantines or orphan references;
-unchanged reruns skipped all files. The warehouse has 10 models and 32 checks.
+unchanged reruns skipped all files. The warehouse has 11 models and 39 checks.
 Unsupported resource types are counted as ignored, not claimed as loaded or
-clinically validated.
+clinically validated. Provider aliases cover all 57,819 finished encounters in
+the latest ten-year modeling window, with complete provider ZIP assignment.
+The current backfill retains encounter context without changing clinical row
+counts. Provider organizations are reported separately from clinical table counts.
 
 ## Generate and validate
 

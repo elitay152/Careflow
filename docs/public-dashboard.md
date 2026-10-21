@@ -37,14 +37,15 @@ usage ledgers, and database dumps outside the frontend.
 
 ## JSON contract
 
-The current contract is version 4:
+The current contract is version 6:
 
 | Field | Contents |
 | --- | --- |
 | `current` | Cohort label, table counts, source-load time, monthly/annual utilization, 12-month KPIs, chronic-subset summary, grouped conditions, medication statuses, aggregate patient segments, and dbt evidence. |
 | `archive` | Separately labeled numeric validation evidence. |
 | `assistant` | Three exported baseline answers with plans and citations; replay only. |
-| `forecast` | Evaluation evidence or an explicit insufficient-history reason; future predictions require the publication gate. |
+| `demand` | Aggregate encounter histories by provider facility and three-digit ZIP area, care setting, coverage, sparse-history gates, and development comparisons. |
+| `forecast` | Evaluation evidence or an explicit insufficient-history reason; revised development benchmarks withhold future predictions. |
 | `exported_at` | Snapshot generation time, separate from source loading and dbt completion. |
 
 See [metric definitions](metrics.md) for denominators, units, condition groups,
@@ -66,3 +67,11 @@ or relapsed SNOMED concepts; prescription counts use current active status.
 The export contains no patient identifiers or exact ages. Website segment
 filters affect the explorer, while the trend and condition charts retain the
 full cohort.
+
+Demand exports contain aggregate monthly counts, provider reference names,
+opaque site keys, and ZIP areas. They exclude patient identifiers, exact facility
+addresses, source provider IDs, and bed-count metadata. The frontend defaults to
+facility views; ZIP views are an alternative grouping of the same encounters.
+Only groups with latest-year activity are listed. The region is the provider's
+ZIP area, not patient residence or a health-service catchment. Physical Location
+references are retained privately; grouping uses the encounter's serviceProvider.

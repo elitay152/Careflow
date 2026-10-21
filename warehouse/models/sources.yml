@@ -8,3 +8,5 @@ sources:
       - name: encounters
       - name: conditions
       - name: medications
+      - name: facilities
+      - name: facility_aliases

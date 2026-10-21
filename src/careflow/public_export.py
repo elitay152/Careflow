@@ -7,6 +7,8 @@ from pathlib import Path
 import re
 import tempfile
 
+from .analytics import WAREHOUSE_MODELS, WAREHOUSE_CHECKS
+
 from sqlalchemy import text
 
 from .assistant import Assistant, BaselinePlanner, json_value, readonly
@@ -14,6 +16,7 @@ from .condition_groups import condition_group
 from .forecast import evaluate_forecast
 from .utilization import CHRONIC_CODES, utilization_details
 from .segmentation import export_segments
+from .demand import export_demand
 
 
 TABLES = ("patients", "encounters", "conditions", "medications", "loads", "quarantine")
@@ -64,7 +67,7 @@ def warehouse_evidence(directory, database, raw_schema, analytics_schema, loaded
     ):
         raise ValueError("dbt evidence targets another source schema")
     outcomes = Counter((row["unique_id"].split(".")[0], row["status"]) for row in results["results"])
-    passed = outcomes == Counter({("model", "success"): 10, ("test", "pass"): 32})
+    passed = outcomes == Counter({("model", "success"): WAREHOUSE_MODELS, ("test", "pass"): WAREHOUSE_CHECKS})
     if len({row["unique_id"] for row in results["results"]}) != len(results["results"]):
         raise ValueError("dbt evidence contains duplicate results")
     timestamp(meta["generated_at"])
@@ -117,6 +120,7 @@ def export_public_snapshot(engine, output, *, raw_schema="public", analytics_sch
         medications = rows(f"SELECT status, count(*) AS request_count FROM {warehouse}.fct_medication_requests GROUP BY status ORDER BY status")
         annual, summary, chronic = utilization_details(connection, warehouse, monthly, counts["patients"])
         segments = export_segments(connection, warehouse, summary)
+        demand = export_demand(connection, warehouse, raw, monthly)
         annual = [{key: json_value(value) for key, value in row.items()} for row in annual]
         if summary is not None:
             summary = {key: json_value(value) for key, value in summary.items()}
@@ -136,7 +140,7 @@ def export_public_snapshot(engine, output, *, raw_schema="public", analytics_sch
         )}})
     forecast = evaluate_forecast(monthly)
     snapshot = {
-        "schema_version": 4, "synthetic_only": True,
+        "schema_version": 6, "synthetic_only": True,
         "exported_at": datetime.now(timezone.utc).isoformat(),
         "current": {"label": cohort_label, "raw_schema": raw_schema,
                     "analytics_schema": analytics_schema, "source_loaded_at": loaded_at,
@@ -146,7 +150,7 @@ def export_public_snapshot(engine, output, *, raw_schema="public", analytics_sch
                     "medication_status": medications, "quality": quality},
         "archive": archive_summary(archive, archive_date),
         "assistant": {"mode": "baseline", "execution": "exported_replay", "examples": examples},
-        "forecast": forecast,
+        "forecast": forecast, "demand": demand,
     }
     output = Path(output)
     output.parent.mkdir(parents=True, exist_ok=True)
@@ -154,7 +158,11 @@ def export_public_snapshot(engine, output, *, raw_schema="public", analytics_sch
     try:
         with tempfile.NamedTemporaryFile(mode="w", dir=output.parent, delete=False) as stream:
             temporary = stream.name
-            json.dump(snapshot, stream, indent=2, allow_nan=False)
+            serialized = json.dumps(snapshot, indent=2, allow_nan=False)
+            # Keep dense monthly count arrays on one line for reviewable snapshot diffs.
+            serialized = re.sub(r'("counts": \[)\s*(\d+(?:,\s*\d+)*)\s*\]',
+                                lambda m: m.group(1) + re.sub(r"\s+", " ", m.group(2)) + "]", serialized)
+            stream.write(serialized)
             stream.write("\n")
         os.replace(temporary, output)
     finally:

@@ -6,7 +6,8 @@ from pathlib import Path
 
 from sqlalchemy import func, select
 
-from .db import conditions, encounters, loads, medications, patients, quarantine, upsert
+from .db import conditions, encounters, facilities, loads, medications, patients, quarantine, upsert
+from .enrichment import encounter_context, ingest_facility
 
 
 def required_string(value, label):
@@ -63,7 +64,16 @@ def normalize(resource, aliases, source_hash, medication_concepts=None):
         gender = resource.get("gender", "unknown")
         if gender not in {"male", "female", "other", "unknown"}:
             raise ValueError("invalid administrative gender")
-        return patients, {**common, "birth_date": born.isoformat(), "gender": gender}
+        death_date = clinical_date(resource.get("deceasedDateTime"))
+        if death_date and date.fromisoformat(death_date) < born:
+            raise ValueError("death date precedes birth")
+        deceased = resource.get("deceasedBoolean")
+        if deceased is not None and type(deceased) is not bool:
+            raise ValueError("deceasedBoolean must be boolean")
+        if "deceasedBoolean" in resource and "deceasedDateTime" in resource:
+            raise ValueError("Patient must use only one deceased choice")
+        return patients, {**common, "birth_date": born.isoformat(), "gender": gender,
+                          "death_date": death_date, "deceased": True if death_date else deceased}
     subject = resource.get("subject")
     if not isinstance(subject, dict):
         raise ValueError("subject must be an object")
@@ -113,7 +123,7 @@ def normalize(resource, aliases, source_hash, medication_concepts=None):
     if status not in {"planned", "arrived", "triaged", "in-progress", "onleave", "finished", "cancelled", "entered-in-error", "unknown"}:
         raise ValueError("invalid encounter status")
     return encounters, {**common, "patient_id": patient_id, "status": status,
-                        "started_at": started, "ended_at": ended}
+                        "started_at": started, "ended_at": ended, **encounter_context(resource)}
 
 
 def ingest(engine, path, reprocess=False):
@@ -177,6 +187,13 @@ def ingest(engine, path, reprocess=False):
             if not isinstance(kind, str) or not kind:
                 reject(index, resource, "resourceType must be a nonempty string")
                 continue
+            if kind == "Organization":
+                try:
+                    ingest_facility(connection, resource, entry.get("fullUrl"), digest)
+                    accepted += 1
+                except (ValueError, TypeError, KeyError, AttributeError) as error:
+                    reject(index, resource, str(error))
+                continue
             if kind not in {"Patient", "Encounter", "Condition", "MedicationRequest"}:
                 ignored += 1
                 continue
@@ -219,4 +236,5 @@ def report(engine):
         grouped = connection.execute(select(
             patients.c.gender, func.count(encounters.c.id).label("encounters")
         ).select_from(patients.join(encounters)).group_by(patients.c.gender)).mappings()
-        return {"counts": counts, "encounters_by_gender": [dict(row) for row in grouped]}
+        return {"counts": counts, "provider_organizations": connection.scalar(select(func.count()).select_from(facilities)),
+                "encounters_by_gender": [dict(row) for row in grouped]}

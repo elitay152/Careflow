@@ -1,6 +1,7 @@
 import argparse
 import json
 import os
+import re
 from pathlib import Path
 
 from .db import connect
@@ -17,6 +18,7 @@ def main():
     demo.add_argument("--extended", action="store_true", help="Include conditions and medication requests")
     load = subparsers.add_parser("ingest")
     load.add_argument("path", type=Path)
+    load.add_argument("--schema", help="Existing PostgreSQL raw schema for ingestion or replay")
     load.add_argument("--reprocess", action="store_true", help="Replay unchanged files after an ingestion upgrade")
     subparsers.add_parser("report")
     subparsers.add_parser("usage", help="Inspect persistent local model usage; no model request")
@@ -72,7 +74,24 @@ def main():
         finally:
             assistant.engine.dispose()
         return
-    engine = connect(args.database_url)
+    database_url = args.database_url
+    if args.command == "ingest" and args.schema:
+        from sqlalchemy import create_engine, text
+        from sqlalchemy.engine import make_url
+        url = make_url(database_url)
+        if url.get_backend_name() != "postgresql" or not re.fullmatch(r"[a-z][a-z0-9_]{0,62}", args.schema):
+            parser.error("--schema requires PostgreSQL and a simple lowercase schema name")
+        probe = create_engine(url)
+        try:
+            with probe.connect() as connection:
+                if not connection.scalar(text("SELECT EXISTS (SELECT 1 FROM pg_namespace WHERE nspname=:schema)"), {"schema": args.schema}):
+                    parser.error("--schema must name an existing schema")
+        finally:
+            probe.dispose()
+        query = dict(url.query)
+        query["options"] = (query.get("options", "") + f" -csearch_path={args.schema}").strip()
+        database_url = url.set(query=query)
+    engine = connect(database_url)
     try:
         if args.command == "dashboard":
             from .analytics import dashboard

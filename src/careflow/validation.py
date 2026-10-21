@@ -15,16 +15,18 @@ import sys
 from statistics import median
 from time import perf_counter
 
+from .analytics import WAREHOUSE_MODELS, WAREHOUSE_CHECKS
+
 from sqlalchemy import create_engine, select, text
 from sqlalchemy.engine import make_url
 
 from .analytics import build_warehouse, dashboard
-from .db import conditions, connect, encounters, medications, patients, quarantine
+from .db import conditions, connect, encounters, medications, patients, quarantine, facilities
 from .pipeline import ingest, report
 
 
 TABLES = {"Patient": patients, "Encounter": encounters, "Condition": conditions,
-          "MedicationRequest": medications}
+          "MedicationRequest": medications, "Organization": facilities}
 
 
 def inventory(paths):
@@ -140,6 +142,11 @@ def check_resource_values(connection, resources):
                 continue
             if kind == "Patient":
                 valid = row["birth_date"] == source["birthDate"] and row["gender"] == source.get("gender", "unknown")
+            elif kind == "Organization":
+                address = next((a for a in source.get("address", []) if a.get("use") == "work"), (source.get("address") or [{}])[0])
+                valid = row["name"] == source.get("name", "Unnamed facility") and all(
+                    row[column] == address.get(field) for column, field in
+                    (("city", "city"), ("state", "state"), ("postal_code", "postalCode"), ("country", "country")))
             else:
                 reference = source["subject"]["reference"]
                 patient_id = reference.removeprefix("urn:uuid:").removeprefix("Patient/")
@@ -241,7 +248,7 @@ def validate(directory, database_url, schema, output):
         warehouse_seconds = perf_counter() - started
         artifact = json.loads((output / "dbt" / "run_results.json").read_text())
         dbt_results = Counter((row["unique_id"].split(".")[0], row["status"]) for row in artifact["results"])
-        if dbt_results != Counter({("model", "success"): 10, ("test", "pass"): 32}):
+        if dbt_results != Counter({("model", "success"): WAREHOUSE_MODELS, ("test", "pass"): WAREHOUSE_CHECKS}):
             issues.append("Unexpected dbt model/test outcomes")
         metric_issues, metric_counts = check_warehouse(engine, schema + "_analytics", resources)
         issues.extend(metric_issues)
@@ -254,7 +261,8 @@ def validate(directory, database_url, schema, output):
             "input_resources": dict(sorted(counts.items())),
             "manifest_sha256": hashlib.sha256(json.dumps(manifest, sort_keys=True).encode()).hexdigest(),
             "accepted": accepted, "rejected": rejected, "ignored": ignored,
-            "database_counts": first_report["counts"], "orphan_counts": orphans,
+            "database_counts": first_report["counts"],
+            "provider_organizations": first_report["provider_organizations"], "orphan_counts": orphans,
             "rejection_reasons": rejections,
             "ingest_seconds": round(ingest_seconds, 3),
             "accepted_resources_per_second": round(accepted / ingest_seconds, 1),
