@@ -9,8 +9,8 @@ from sqlalchemy.engine import make_url
 
 
 ROOT = Path(__file__).resolve().parents[2]
-WAREHOUSE_MODELS = 11
-WAREHOUSE_CHECKS = 39
+WAREHOUSE_MODELS = 13
+WAREHOUSE_CHECKS = 49
 
 
 def build_warehouse(database_url):

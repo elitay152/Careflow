@@ -6,8 +6,9 @@ from pathlib import Path
 
 from sqlalchemy import func, select
 
-from .db import conditions, encounters, facilities, loads, medications, patients, quarantine, upsert
+from .db import conditions, encounters, facilities, loads, medications, observations, patients, quarantine, upsert
 from .enrichment import encounter_context, ingest_facility
+from .observations import supported as supported_observation, normalize_observation
 
 
 def required_string(value, label):
@@ -84,6 +85,8 @@ def normalize(resource, aliases, source_hash, medication_concepts=None):
     if not patient_id:
         raise ValueError("subject must reference a local Patient or a Bundle fullUrl")
     common["patient_id"] = patient_id
+    if resource["resourceType"] == "Observation":
+        return observations, {**common, **normalize_observation(resource)}
     if resource["resourceType"] == "Condition":
         return conditions, {
             **common, **coding(resource.get("code"), "code"),
@@ -127,11 +130,15 @@ def normalize(resource, aliases, source_hash, medication_concepts=None):
                         "started_at": started, "ended_at": ended, **encounter_context(resource)}
 
 
+def reject_nonfinite_json(value):
+    raise ValueError("Non-finite JSON numbers are not valid FHIR input")
+
+
 def ingest(engine, path, reprocess=False):
     path = Path(path)
     raw = path.read_bytes()
     digest = hashlib.sha256(raw).hexdigest()
-    bundle = json.loads(raw)
+    bundle = json.loads(raw, parse_constant=reject_nonfinite_json)
     if not isinstance(bundle, dict) or bundle.get("resourceType") != "Bundle":
         raise ValueError("Input must be a FHIR Bundle")
     entries = bundle.get("entry")
@@ -195,7 +202,10 @@ def ingest(engine, path, reprocess=False):
                 except (ValueError, TypeError, KeyError, AttributeError) as error:
                     reject(index, resource, str(error))
                 continue
-            if kind not in {"Patient", "Encounter", "Condition", "MedicationRequest"}:
+            if kind == "Observation" and not supported_observation(resource):
+                ignored += 1
+                continue
+            if kind not in {"Patient", "Encounter", "Condition", "MedicationRequest", "Observation"}:
                 ignored += 1
                 continue
             try:
@@ -233,7 +243,7 @@ def ingest(engine, path, reprocess=False):
 def report(engine):
     with engine.connect() as connection:
         counts = {table.name: connection.scalar(select(func.count()).select_from(table))
-                  for table in (patients, encounters, conditions, medications, loads, quarantine)}
+                  for table in (patients, encounters, conditions, medications, observations, loads, quarantine)}
         grouped = connection.execute(select(
             patients.c.gender, func.count(encounters.c.id).label("encounters")
         ).select_from(patients.join(encounters)).group_by(patients.c.gender)).mappings()

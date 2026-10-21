@@ -151,7 +151,7 @@ def make_snapshots(patients, encounters, conditions, observation_end, *, externa
     return rows, summary
 
 
-def load_cohort(engine, raw_schema):
+def load_cohort(engine, raw_schema, *, include_observations=False):
     if engine.dialect.name != "postgresql" or not re.fullmatch(r"[a-z][a-z0-9_]{0,62}", raw_schema):
         raise ValueError("Risk audit requires PostgreSQL and a simple schema identifier")
     schema = '"' + raw_schema + '"'
@@ -162,8 +162,9 @@ def load_cohort(engine, raw_schema):
         patients = rows(f"SELECT id, birth_date, death_date, deceased FROM {schema}.patients ORDER BY id")
         encounters = rows(f"SELECT patient_id, status, started_at, ended_at, class_code, class_system FROM {schema}.encounters ORDER BY id")
         conditions = rows(f"SELECT patient_id, code, code_system, onset_date, recorded_date FROM {schema}.conditions ORDER BY id")
+        measurements = rows(f"SELECT id, patient_id, status, effective_at, available_at, measurements FROM {schema}.observations ORDER BY id") if include_observations else None
         loaded = connection.scalar(text(f"SELECT max(loaded_at) FROM {schema}.loads"))
-    return patients, encounters, conditions, loaded
+    return (patients, encounters, conditions, loaded, measurements) if include_observations else (patients, encounters, conditions, loaded)
 
 
 PRIVATE_ROOT = Path(__file__).resolve().parents[2] / "data" / "risk"

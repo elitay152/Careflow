@@ -54,7 +54,7 @@ def test_demo_and_rerun(engine, tmp_path):
     path = generate(tmp_path)
     assert ingest(engine, path) == {"file": str(path), "status": "loaded", "accepted": 6, "rejected": 1, "ignored": 0}
     assert ingest(engine, path)["status"] == "skipped"
-    assert report(engine)["counts"] == {"patients": 3, "encounters": 3, "conditions": 0, "medications": 0, "loads": 1, "quarantine": 1}
+    assert report(engine)["counts"] == {"patients": 3, "encounters": 3, "conditions": 0, "medications": 0, "observations": 0, "loads": 1, "quarantine": 1}
 
 
 def test_updates_use_resource_identity(engine, tmp_path):
@@ -312,11 +312,12 @@ def test_warehouse_metrics_and_dashboard(engine, tmp_path, monkeypatch):
                                     synthetic_confirmed=True, cohort_label="Synthetic integration cohort")
     exported = json.loads(public.read_text())
     assert exported["current"]["label"] == "Synthetic integration cohort"
-    assert exported["current"]["quality"]["checks_passed"] == 39
+    assert exported["current"]["quality"]["checks_passed"] == 49
     assert exported["current"]["counts"]["patients"] == 3
+    assert exported["current"]["counts"]["observations"] == 0
     assert all(row["group"] in {"clinical", "social_context", "history", "care_context", "unclassified"}
                for row in exported["current"]["conditions"])
-    assert exported["schema_version"] == 7
+    assert exported["schema_version"] == 8
     assert exported["current"]["counts"]["quarantine"] == 1
     assert exported["current"]["monthly_utilization"][0]["encounter_count"] == 4
     assert exported["assistant"]["execution"] == "exported_replay"

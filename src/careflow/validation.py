@@ -21,12 +21,13 @@ from sqlalchemy import create_engine, select, text
 from sqlalchemy.engine import make_url
 
 from .analytics import build_warehouse, dashboard
-from .db import conditions, connect, encounters, medications, patients, quarantine, facilities
+from .db import conditions, connect, encounters, medications, patients, quarantine, facilities, observations
 from .pipeline import ingest, report
+from .observations import supported as supported_observation, CODES
 
 
 TABLES = {"Patient": patients, "Encounter": encounters, "Condition": conditions,
-          "MedicationRequest": medications, "Organization": facilities}
+          "MedicationRequest": medications, "Organization": facilities, "Observation": observations}
 
 
 def inventory(paths):
@@ -43,7 +44,7 @@ def inventory(paths):
             resource = entry["resource"]
             kind = resource["resourceType"]
             counts[kind] += 1
-            if kind in resources:
+            if kind in resources and (kind != "Observation" or supported_observation(resource)):
                 resources[kind][resource["id"]] = resource
     return counts, resources, manifest
 
@@ -130,6 +131,40 @@ def check_medication_codes(connection, resources):
     return issues
 
 
+def observation_matches(row, source):
+    """Independent source oracle: do not call the production quantity normalizer."""
+    def utc(value):
+        return datetime.fromisoformat(value.replace("Z", "+00:00")).astimezone(timezone.utc)
+    effective = utc(source["effectiveDateTime"])
+    issued = utc(source["issued"]) if source.get("issued") else None
+    if (row["status"] != source["status"] or utc(row["effective_at"]) != effective
+            or (utc(row["issued_at"]) if row["issued_at"] else None) != issued
+            or (utc(row["available_at"]) if row["available_at"] else None) != (max(effective, issued) if issued else None)):
+        return False
+    code = next(c["code"] for c in source["code"]["coding"] if c.get("system") == "http://loinc.org" and c.get("code") in CODES)
+    if row["code"] != code or row["code_system"] != "http://loinc.org":
+        return False
+    expected = {}
+    for item in source.get("component", []) if code == "85354-9" else [source]:
+        quantity = item.get("valueQuantity")
+        if quantity is None:
+            continue
+        child = next((c["code"] for c in item.get("code", {}).get("coding", []) if c.get("system") == "http://loinc.org" and c.get("code") in CODES), None)
+        if child is None:
+            continue
+        metric = CODES[child]
+        unit = quantity["code"]
+        value = quantity["value"]
+        normalized_unit = unit
+        if metric == "creatinine" and unit == "umol/L":
+            value /= 88.4
+            normalized_unit = "mg/dL"
+        if metric == "egfr" and unit == "mL/min":
+            metric = "egfr_unindexed_unit"
+        expected[metric] = {"value": float(value), "unit": normalized_unit, "source_unit": unit}
+    return row["measurements"] == expected
+
+
 def check_resource_values(connection, resources):
     """Reconcile patient links and key stored values against unnormalized Synthea data."""
     issues = []
@@ -151,7 +186,9 @@ def check_resource_values(connection, resources):
                 reference = source["subject"]["reference"]
                 patient_id = reference.removeprefix("urn:uuid:").removeprefix("Patient/")
                 valid = row["patient_id"] == patient_id
-                if kind == "Encounter":
+                if kind == "Observation":
+                    valid = valid and observation_matches(row, source)
+                elif kind == "Encounter":
                     start = datetime.fromisoformat(source["period"]["start"].replace("Z", "+00:00"))
                     valid = valid and row["status"] == source["status"] and datetime.fromisoformat(row["started_at"]) == start
                     end = source["period"].get("end")
@@ -219,7 +256,7 @@ def validate(directory, database_url, schema, output):
             issues.append(f"{rejected} supported records were quarantined; inspect rejection reasons")
         if accepted + rejected + ignored != sum(counts.values()):
             issues.append("Input resource accounting does not balance")
-        if accepted + rejected != sum(counts[kind] for kind in TABLES):
+        if accepted + rejected != sum(counts[kind] for kind in TABLES if kind != "Observation") + len(resources["Observation"]):
             issues.append("Supported resource accounting does not balance")
         with engine.connect() as connection:
             for kind, table in TABLES.items():
@@ -227,7 +264,7 @@ def validate(directory, database_url, schema, output):
                 if observed != set(resources[kind]):
                     issues.append(f"{kind} IDs do not reconcile with source")
             orphans = {}
-            for table in (encounters, conditions, medications):
+            for table in (encounters, conditions, medications, observations):
                 missing = connection.execute(select(table.c.id).select_from(
                     table.outerjoin(patients, table.c.patient_id == patients.c.id)
                 ).where(patients.c.id.is_(None))).all()

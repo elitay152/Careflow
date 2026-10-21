@@ -9,6 +9,8 @@ from importlib.metadata import version
 import os
 from pathlib import Path
 
+from .clinical_features import CLINICAL_FEATURES, METRICS, add_measurements
+
 from .hospitalization import (
     FEATURES,
     PRIVATE_ROOT,
@@ -136,12 +138,13 @@ def enrich(rows, encounters, conditions):
     return result
 
 
-def compare(rows, *, tabpfn=False, checkpoint=None):
+def compare(rows, *, tabpfn=False, checkpoint=None, clinical=False):
     import numpy as np
     from sklearn.ensemble import HistGradientBoostingClassifier
     from sklearn.linear_model import LogisticRegression
     from sklearn.pipeline import make_pipeline
     from sklearn.preprocessing import StandardScaler
+    from sklearn.impute import SimpleImputer
     from sklearn.metrics import (
         average_precision_score,
         brier_score_loss,
@@ -167,10 +170,12 @@ def compare(rows, *, tabpfn=False, checkpoint=None):
         raise ValueError("Invalid chronological split")
     results = []
     tabpfn_error = None
-    for features_name, features in (
-        ("original", FEATURES),
-        ("enriched", (*FEATURES, *ADDED_FEATURES)),
-    ):
+    feature_sets = [("original", FEATURES), ("enriched", (*FEATURES, *ADDED_FEATURES))]
+    if clinical:
+        feature_sets.append(
+            ("clinical", (*FEATURES, *ADDED_FEATURES, *CLINICAL_FEATURES))
+        )
+    for features_name, features in feature_sets:
         x = {
             name: np.asarray(
                 [[r["features"][f] for f in features] for r in part], dtype=float
@@ -187,19 +192,23 @@ def compare(rows, *, tabpfn=False, checkpoint=None):
             (
                 "logistic",
                 make_pipeline(
+                    SimpleImputer(strategy="median", keep_empty_features=True),
                     StandardScaler(),
                     LogisticRegression(C=1, max_iter=2000, random_state=0),
                 ),
             ),
             (
                 "gradient_boosting",
-                HistGradientBoostingClassifier(
-                    max_iter=100,
-                    max_leaf_nodes=7,
-                    min_samples_leaf=30,
-                    l2_regularization=1,
-                    early_stopping=False,
-                    random_state=0,
+                make_pipeline(
+                    SimpleImputer(strategy="median", keep_empty_features=True),
+                    HistGradientBoostingClassifier(
+                        max_iter=100,
+                        max_leaf_nodes=7,
+                        min_samples_leaf=30,
+                        l2_regularization=1,
+                        early_stopping=False,
+                        random_state=0,
+                    ),
                 ),
             ),
         ]
@@ -299,15 +308,39 @@ def compare(rows, *, tabpfn=False, checkpoint=None):
             )
     return {
         "package_versions": {name: version(name) for name in ("scikit-learn", "numpy")},
-        "protocol": "admission_model_development_v1",
+        "protocol": (
+            "admission_model_development_v2"
+            if clinical
+            else "admission_model_development_v1"
+        ),
         "evaluation_role": "development_only_previously_inspected_test",
-        "features": list((*FEATURES, *ADDED_FEATURES)),
+        "features": list(
+            (*FEATURES, *ADDED_FEATURES, *(CLINICAL_FEATURES if clinical else ()))
+        ),
+        "measurement_coverage": (
+            {
+                split: {
+                    metric: {
+                        "snapshots_with_value": sum(
+                            not row["features"][f"{metric}_missing"] for row in part
+                        ),
+                        "snapshots": len(part),
+                    }
+                    for metric in METRICS
+                }
+                for split, part in parts.items()
+            }
+            if clinical
+            else None
+        ),
         "results": results,
         "limitations": [
             "Repeated snapshots are correlated.",
             "No independent performance claim: inspected test is development evidence.",
             "Diagnosis flags indicate historical recording, not current severity.",
-            "Socioeconomic and observation measurements are not ingested.",
+            "Socioeconomic history and validated illness severity are unavailable.",
+            "Clinical values use final issued results within 365 days; current versions do not reconstruct full chart history.",
+            "Creatinine specimen-specific LOINC codes are combined for this synthetic experiment; no clinical equivalence is established.",
             "CPU TabPFN uses a fixed 1000-row label-independent training subset; full-data models have a different training budget.",
         ],
     }
@@ -336,8 +369,10 @@ def main():
 
     if date.fromisoformat(args.observation_end).isoformat() != args.observation_end:
         raise ValueError("Observation cutoff must be an ISO date")
-    patients, encounters, conditions, loaded = load_cohort(
-        create_engine(os.environ["DATABASE_URL"]), args.raw_schema
+    patients, encounters, conditions, loaded, measurements = load_cohort(
+        create_engine(os.environ["DATABASE_URL"]),
+        args.raw_schema,
+        include_observations=True,
     )
     rows, summary = make_snapshots(
         patients, encounters, conditions, args.observation_end
@@ -346,11 +381,12 @@ def main():
         raise ValueError("Readiness gates failed")
     if args.tabpfn_checkpoint and not args.tabpfn:
         raise ValueError("--tabpfn-checkpoint requires --tabpfn")
-    enriched = enrich(rows, encounters, conditions)
+    enriched = add_measurements(enrich(rows, encounters, conditions), measurements)
     result = compare(
         enriched,
         tabpfn=args.tabpfn,
         checkpoint=args.tabpfn_checkpoint,
+        clinical=True,
     )
     if args.tabpfn:
         from importlib.metadata import PackageNotFoundError

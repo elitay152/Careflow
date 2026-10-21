@@ -65,6 +65,19 @@ medications = Table(
     Column("authored_date", String),
     Column("source_hash", String, nullable=False),
 )
+observations = Table(
+    "observations", metadata,
+    Column("id", String, primary_key=True),
+    Column("patient_id", String, ForeignKey("patients.id"), nullable=False),
+    Column("code", String, nullable=False),
+    Column("code_system", String, nullable=False),
+    Column("status", String, nullable=False),
+    Column("effective_at", String, nullable=False),
+    Column("issued_at", String),
+    Column("available_at", String),
+    Column("measurements", JSON, nullable=False),
+    Column("source_hash", String, nullable=False),
+)
 loads = Table(
     "loads", metadata,
     Column("source_hash", String, primary_key=True),

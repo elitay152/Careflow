@@ -37,11 +37,11 @@ usage ledgers, and database dumps outside the frontend.
 
 ## JSON contract
 
-The current contract is version 7:
+The current contract is version 8:
 
 | Field | Contents |
 | --- | --- |
-| `current` | Cohort label, table counts, source-load time, monthly/annual utilization, 12-month KPIs, chronic-subset summary, grouped conditions, medication statuses, aggregate patient segments, and dbt evidence. |
+| `current` | Cohort label, table counts (including selected Observation resources), source-load time, monthly/annual utilization, 12-month KPIs, chronic-subset summary, grouped conditions, medication statuses, aggregate patient segments, and dbt evidence. |
 | `archive` | Separately labeled numeric validation evidence. |
 | `assistant` | Three exported baseline answers with plans and citations; replay only. |
 | `demand` | Aggregate encounter histories by provider facility and three-digit ZIP area, care setting, coverage, sparse-history gates, and development comparisons. |
