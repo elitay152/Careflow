@@ -51,6 +51,7 @@ conditions = Table(
     Column("clinical_status", String, nullable=False),
     Column("verification_status", String, nullable=False),
     Column("onset_date", String),
+    Column("recorded_date", String),
     Column("source_hash", String, nullable=False),
 )
 medications = Table(
@@ -94,7 +95,7 @@ def connect(url):
     metadata.create_all(engine)
     # Nullable additions preserve existing rows; replay source bundles to backfill.
     with engine.begin() as connection:
-        for table in (patients, encounters):
+        for table in (patients, encounters, conditions):
             observed = {column["name"] for column in inspect(connection).get_columns(table.name)}
             for column in table.columns:
                 if column.name not in observed:

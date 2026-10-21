@@ -164,6 +164,10 @@ def check_resource_values(connection, resources):
                     verification = source.get("verificationStatus", {}).get("coding", [{}])[0].get("code", "unknown")
                     valid = valid and (row["code_system"], row["code"], row["clinical_status"], row["verification_status"]) == (
                         code["system"], code["code"], clinical, verification)
+                    recorded = source.get("recordedDate")
+                    expected_recorded = (datetime.fromisoformat(recorded.replace("Z", "+00:00")).astimezone(timezone.utc).date().isoformat()
+                                         if recorded and len(recorded) > 10 else recorded)
+                    valid = valid and row["recorded_date"] == expected_recorded
                 else:
                     valid = valid and row["status"] == source["status"]
             if not valid:

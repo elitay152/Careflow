@@ -92,6 +92,7 @@ def normalize(resource, aliases, source_hash, medication_concepts=None):
             "verification_status": status_code(resource, "verificationStatus", {
                 "unconfirmed", "provisional", "differential", "confirmed", "refuted", "entered-in-error"}),
             "onset_date": clinical_date(resource.get("onsetDateTime")),
+            "recorded_date": clinical_date(resource.get("recordedDate")),
         }
     if resource["resourceType"] == "MedicationRequest":
         status = resource.get("status")

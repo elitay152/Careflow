@@ -12,6 +12,7 @@ dependencies = ["SQLAlchemy==2.0.46", "psycopg[binary]==3.2.13"]
 [project.optional-dependencies]
 dev = ["pytest==9.1.1", "fastapi==0.156.2", "httpx==0.28.1"]
 analytics = ["dbt-postgres==1.11.0", "dbt-core==1.12.6", "dagster==1.13.26", "dagster-webserver==1.13.26"]
+ml = ["scikit-learn==1.9.1"]
 assistant = ["fastapi==0.156.2", "httpx==0.28.1", "uvicorn==0.34.2"]
 
 [project.scripts]

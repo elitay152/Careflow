@@ -37,7 +37,7 @@ usage ledgers, and database dumps outside the frontend.
 
 ## JSON contract
 
-The current contract is version 6:
+The current contract is version 7:
 
 | Field | Contents |
 | --- | --- |
@@ -45,6 +45,7 @@ The current contract is version 6:
 | `archive` | Separately labeled numeric validation evidence. |
 | `assistant` | Three exported baseline answers with plans and citations; replay only. |
 | `demand` | Aggregate encounter histories by provider facility and three-digit ZIP area, care setting, coverage, sparse-history gates, and development comparisons. |
+| `risk` | Optional current, source-matched aggregate inpatient-risk readiness, baselines, internal/independent evaluation, and calibration; no patient rows or scores. |
 | `forecast` | Evaluation evidence or an explicit insufficient-history reason; revised development benchmarks withhold future predictions. |
 | `exported_at` | Snapshot generation time, separate from source loading and dbt completion. |
 

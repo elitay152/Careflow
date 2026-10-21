@@ -2,7 +2,7 @@
 
 A synthetic healthcare data platform: FHIR ingestion, PostgreSQL, a dbt warehouse,
 Dagster orchestration, a restricted analytics assistant, and statistical forecast
-evaluation. A [separate React website](https://elitay152.github.io/careflow-dashboard/)
+evaluation and a synthetic 90-day inpatient-risk experiment. A [separate React website](https://elitay152.github.io/careflow-dashboard/)
 renders aggregate exports without database or model credentials.
 
 ```mermaid
@@ -136,3 +136,30 @@ bash scripts/security_check.sh
 PostgreSQL tests use temporary schemas and require schema-creation permission.
 CI runs database tests, pipeline checks, dependency advisories, and secret scans.
 Model calls run only through an explicitly invoked live workflow or live mode.
+
+## Inpatient-risk experiment
+
+The private audit creates adult quarterly snapshots, checks follow-up, merges
+inpatient episodes, and separates patients and time across train/validation/test.
+Diagnosis features require both onset and recorded dates before the snapshot;
+current statuses are excluded. The fixed logistic model is compared with
+training-prevalence and prior-admission baselines. No LLM or paid API is used.
+
+With `.env` loaded and the enriched seed-43 schema available:
+
+```bash
+.venv/bin/careflow risk-audit --confirm-synthetic --raw-schema synthea_p1000_seed43 \
+  --observation-end 2025-01-01 --output data/risk/synthea_p1000_seed43 --train
+```
+
+`--observation-end` attests the exclusive simulator cutoff; it is not inferred
+from the last encounter. Omit `--train` for readiness only. Install `.[ml]` when
+using a minimal installation; `scripts/install.sh` includes the pinned ML extra.
+Patient snapshot files stay under ignored `data/risk/`; no individual scores,
+serialized models, or snapshot files are exported publicly.
+
+For a separate-seed check, generate and validate seed 44 in its own schema, then
+repeat the audit with `--external-schema synthea_p1000_seed44`. This evaluates
+the same fitted model and validation-selected thresholds without tuning them.
+The refresh script includes matching aggregate risk evidence and withholds stale
+or wrong-cohort artifacts. See [metric definitions](docs/metrics.md) for rules.

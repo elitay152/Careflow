@@ -17,6 +17,7 @@ from .forecast import evaluate_forecast
 from .utilization import CHRONIC_CODES, utilization_details
 from .segmentation import export_segments
 from .demand import export_demand
+from .risk_public import load_public_risk
 
 
 TABLES = ("patients", "encounters", "conditions", "medications", "loads", "quarantine")
@@ -100,7 +101,7 @@ def archive_summary(path, recorded_on):
 
 def export_public_snapshot(engine, output, *, raw_schema="public", analytics_schema="analytics",
                            dbt_artifacts=None, archive=None, archive_date=None,
-                           synthetic_confirmed=False, cohort_label="Hand-authored extended demo"):
+                           synthetic_confirmed=False, cohort_label="Hand-authored extended demo", risk_artifact=None):
     if not synthetic_confirmed:
         raise ValueError("Confirm the database contains only synthetic data before public export")
     if not isinstance(cohort_label, str) or not cohort_label.strip() or len(cohort_label) > 200:
@@ -121,6 +122,7 @@ def export_public_snapshot(engine, output, *, raw_schema="public", analytics_sch
         annual, summary, chronic = utilization_details(connection, warehouse, monthly, counts["patients"])
         segments = export_segments(connection, warehouse, summary)
         demand = export_demand(connection, warehouse, raw, monthly)
+        risk = load_public_risk(risk_artifact, connection, engine.url.database, raw_schema, loaded_at)
         annual = [{key: json_value(value) for key, value in row.items()} for row in annual]
         if summary is not None:
             summary = {key: json_value(value) for key, value in summary.items()}
@@ -140,7 +142,7 @@ def export_public_snapshot(engine, output, *, raw_schema="public", analytics_sch
         )}})
     forecast = evaluate_forecast(monthly)
     snapshot = {
-        "schema_version": 6, "synthetic_only": True,
+        "schema_version": 7, "synthetic_only": True,
         "exported_at": datetime.now(timezone.utc).isoformat(),
         "current": {"label": cohort_label, "raw_schema": raw_schema,
                     "analytics_schema": analytics_schema, "source_loaded_at": loaded_at,
@@ -150,7 +152,7 @@ def export_public_snapshot(engine, output, *, raw_schema="public", analytics_sch
                     "medication_status": medications, "quality": quality},
         "archive": archive_summary(archive, archive_date),
         "assistant": {"mode": "baseline", "execution": "exported_replay", "examples": examples},
-        "forecast": forecast, "demand": demand,
+        "forecast": forecast, "demand": demand, "risk": risk,
     }
     output = Path(output)
     output.parent.mkdir(parents=True, exist_ok=True)

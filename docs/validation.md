@@ -52,3 +52,12 @@ Generated inputs, binaries, logs, and run reports remain under ignored `data/`.
 Seeds identify generation settings; per-file checksums identify exact replay
 inputs. This is subset compatibility testing, not a production capacity or
 clinical validation benchmark.
+
+## Independent hospitalization cohort
+
+The separate seed-44 run contains 1,143 patients and 216,182 supported resources,
+with zero quarantines and all 39 dbt checks passing. Its schema is
+`synthea_p1000_seed44`; it does not change the primary dashboard cohort.
+The frozen hospitalization experiment evaluates 6,226 quarterly snapshots from
+794 eligible adults, with 101 positive snapshots among 92 patients. These are
+synthetic simulator-seed checks, not clinical validation.
