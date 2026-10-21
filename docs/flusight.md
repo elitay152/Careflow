@@ -56,6 +56,30 @@ counts. Overlapping horizons produce correlated errors, there is only one held-o
 season, and no uncertainty intervals are estimated. Results do not establish
 operational planning performance.
 
+## Peak error analysis
+
+The public artifact includes `holdout.peak_diagnostics`, computed from the existing
+held-out predictions after scoring. For each fixed horizon and model it reports
+MAE, mean signed error (prediction minus observation), and the share of full-season
+absolute error before, within, and after a five-week window centered on the observed
+peak. Window endpoints are inclusive; ties for peaks use the earliest week. Empty
+period averages and error shares for a perfect forecast are null, not zero.
+
+The observed peak is 42,500 admissions on January 3, 2026. The window is December
+20–January 17. At one week, the selected model's MAE is 384 before the window,
+14,612 within it, and 2,568 afterward; persistence scores 464, 10,827, and 889.
+At four weeks, 68.2% of the selected model's absolute error falls after the window,
+with mean overprediction of 8,899 admissions per week in that period.
+
+Peak timing and height compare maxima of the observed series and the rolling
+prediction curve at each horizon. That curve combines successive forecast origins;
+it is not one season-long forecast. The selected model's peak is one week late at
+the one-week horizon and four weeks late at the four-week horizon. The breakdown
+locates errors without establishing their cause. It was added after inspecting
+holdout results and is descriptive, not a fresh independent test or a tuned model
+setting. Period lengths differ; error shares should be read alongside MAE and
+week counts. No models, selection scores, or publication decisions are changed.
+
 ## Attribution and reuse basis
 
 Source: [CDC FluSight forecast hub target data](https://github.com/cdcepi/FluSight-forecast-hub/tree/ff95b0fd9883aa15f4ce3f6e46830973f905ffd1/target-data),

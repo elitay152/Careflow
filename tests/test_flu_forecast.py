@@ -9,6 +9,7 @@ from careflow.flu_forecast import (
     evaluate,
     parse_source,
     predict,
+    peak_diagnostics,
 )
 
 
@@ -106,3 +107,33 @@ def test_selection_and_first_holdout_forecasts_do_not_use_holdout_outcomes():
 def test_incomplete_holdout_is_refused():
     with pytest.raises(ValueError, match="Incomplete"):
         evaluate(history()[:-40], protocol())
+
+
+def test_peak_diagnostics_boundaries_ties_signed_bias_and_error_shares():
+    p = protocol()
+    rows = []
+    actuals = [1, 2, 3, 10, 10, 4, 3, 2, 1]
+    for i, actual in enumerate(actuals):
+        for h in p["horizons"]:
+            rows.append(
+                {
+                    "week": (date(2025, 7, 5) + timedelta(weeks=i)).isoformat(),
+                    "horizon": h,
+                    "actual": actual,
+                    **{m: actual + (2 if i <= 5 else -1) for m in p["models"]},
+                }
+            )
+    d = peak_diagnostics(rows, p)
+    assert d["observed_peak"] == {"week": "2025-07-26", "count": 10}
+    phases = d["by_horizon"][0]["models"][0]["phases"]
+    assert [x["n"] for x in phases] == [1, 5, 3]
+    assert [x["mae"] for x in phases] == [2, 2, 1]
+    assert [x["bias"] for x in phases] == [2, 2, -1]
+    assert [x["error_share"] for x in phases] == pytest.approx(
+        [2 / 15, 10 / 15, 3 / 15]
+    )
+    assert d["by_horizon"][0]["models"][0]["peak"]["lag_weeks"] == 0
+    perfect = [{**r, **{m: r["actual"] for m in p["models"]}} for r in rows[:4]]
+    boundary = peak_diagnostics(perfect, p)["by_horizon"][0]["models"][0]["phases"]
+    assert boundary[0]["n"] == 0 and boundary[0]["mae"] is None
+    assert all(x["error_share"] is None for x in boundary)

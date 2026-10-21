@@ -189,6 +189,73 @@ def metric_rows(predictions, protocol):
     return results
 
 
+def peak_diagnostics(predictions, protocol):
+    """Descriptive analysis after scoring; never used for selection or gating."""
+    observed = sorted(
+        (r for r in predictions if r["horizon"] == 1), key=lambda r: r["week"]
+    )
+    peak = max(observed, key=lambda r: r["actual"])
+    peak_date = date.fromisoformat(peak["week"])
+    start, end = ((peak_date + timedelta(weeks=w)).isoformat() for w in (-2, 2))
+    horizons = []
+    for horizon in protocol["horizons"]:
+        rows = sorted(
+            (r for r in predictions if r["horizon"] == horizon), key=lambda r: r["week"]
+        )
+        models = []
+        for model in protocol["models"]:
+            total = sum(abs(r[model] - r["actual"]) for r in rows)
+            phases = []
+            for phase in ("before", "peak", "after"):
+                part = [
+                    r
+                    for r in rows
+                    if (
+                        "before"
+                        if r["week"] < start
+                        else "after" if r["week"] > end else "peak"
+                    )
+                    == phase
+                ]
+                absolute = sum(abs(r[model] - r["actual"]) for r in part)
+                phases.append(
+                    {
+                        "phase": phase,
+                        "n": len(part),
+                        "mae": absolute / len(part) if part else None,
+                        "bias": (
+                            sum(r[model] - r["actual"] for r in part) / len(part)
+                            if part
+                            else None
+                        ),
+                        "error_share": absolute / total if total else None,
+                    }
+                )
+            predicted_peak = max(rows, key=lambda r: r[model])
+            models.append(
+                {
+                    "model": model,
+                    "phases": phases,
+                    "peak": {
+                        "week": predicted_peak["week"],
+                        "count": predicted_peak[model],
+                        "lag_weeks": (
+                            date.fromisoformat(predicted_peak["week"]) - peak_date
+                        ).days
+                        // 7,
+                        "count_error": predicted_peak[model] - peak["actual"],
+                    },
+                }
+            )
+        horizons.append({"horizon": horizon, "models": models})
+    return {
+        "method": "descriptive_peak_window_v1",
+        "observed_peak": {"week": peak["week"], "count": peak["actual"]},
+        "peak_window": {"start": start, "end": end},
+        "by_horizon": horizons,
+    }
+
+
 def evaluate(history, protocol):
     from threadpoolctl import threadpool_limits
 
@@ -262,6 +329,7 @@ def evaluate(history, protocol):
             "forecasts": len(held),
             "metrics": hm,
             "predictions": held,
+            "peak_diagnostics": peak_diagnostics(held, protocol),
         },
         "publication": {
             "status": "research_projection" if publish else "withheld",
