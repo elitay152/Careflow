@@ -21,7 +21,7 @@ careflow = "careflow.cli:main"
 where = ["src"]
 
 [tool.setuptools.package-data]
-careflow = ["metric_catalog.json", "assistant_ui.html"]
+careflow = ["metric_catalog.json", "condition_groups.json", "assistant_ui.html"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

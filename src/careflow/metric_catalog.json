@@ -6,7 +6,10 @@
     "keywords": "monthly encounters visits utilization count finished hospital",
     "relation": "mart_monthly_utilization",
     "column": "encounter_count",
-    "limitations": ["Other encounter statuses are excluded.", "Months with no finished encounters are absent."]
+    "limitations": [
+      "Other encounter statuses are excluded.",
+      "Months with no finished encounters are absent."
+    ]
   },
   {
     "id": "monthly_patients",
@@ -15,7 +18,9 @@
     "keywords": "monthly unique distinct patients people visits",
     "relation": "mart_monthly_utilization",
     "column": "unique_patients",
-    "limitations": ["A patient can appear in multiple months; summing these counts is not a distinct population count."]
+    "limitations": [
+      "A patient can appear in multiple months; summing these counts is not a distinct population count."
+    ]
   },
   {
     "id": "mean_encounter_duration",
@@ -24,7 +29,10 @@
     "keywords": "mean average duration minutes encounter length monthly",
     "relation": "mart_monthly_utilization",
     "column": "average_duration_minutes",
-    "limitations": ["Null end timestamps are excluded from the mean.", "Encounter duration is not necessarily hospital length of stay."]
+    "limitations": [
+      "Null end timestamps are excluded from the mean.",
+      "Encounter duration is not necessarily hospital length of stay."
+    ]
   },
   {
     "id": "condition_prevalence",
@@ -33,7 +41,13 @@
     "keywords": "condition prevalence common diabetes hypertension diagnosis proportion percent",
     "relation": "mart_condition_prevalence",
     "column": "prevalence_fraction",
-    "limitations": ["This is a current recorded snapshot, not historical population prevalence.", "The denominator includes all loaded patients, including deceased patients.", "Unknown verification, refuted, error, and inactive conditions are excluded.", "Name filters are literal substring matches, not clinical concept sets; condition groups can overlap."]
+    "limitations": [
+      "This is a current recorded snapshot, not historical population prevalence.",
+      "The denominator includes all loaded patients, including deceased patients.",
+      "Unknown verification, refuted, error, and inactive conditions are excluded.",
+      "Name filters are literal substring matches, not clinical concept sets; condition groups can overlap.",
+      "FHIR Condition resources may describe social context, history, and care situations as well as clinical conditions; this metric includes them and does not identify chronic disease. Dashboard groups are a separate curated presentation mapping."
+    ]
   },
   {
     "id": "medication_requests",
@@ -42,6 +56,9 @@
     "keywords": "medication medications prescription prescriptions drug requests count status",
     "relation": "fct_medication_requests",
     "column": "status",
-    "limitations": ["Requests do not establish dispensing, administration, or adherence.", "Date and drug-name filters are not supported by this assistant yet."]
+    "limitations": [
+      "Requests do not establish dispensing, administration, or adherence.",
+      "Date and drug-name filters are not supported by this assistant yet."
+    ]
   }
 ]
