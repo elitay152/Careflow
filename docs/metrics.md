@@ -327,21 +327,9 @@ combine clinical attributes with simulated state. Observed histories may omit
 state that drives event timing. This limits what the current features can learn;
 it does not prove synthetic data are wholly random or universally unpredictable.
 
-## Separate public-data forecasting candidate
+## Public influenza forecasting
 
-[CDC FluSight target data](https://github.com/cdcepi/FluSight-forecast-hub/tree/main/target-data)
-contain observed weekly laboratory-confirmed influenza hospital admissions sourced
-from NHSN. The inspected file spans February 5, 2022–October 17, 2026, with 13,038
-location-week rows across 53 locations. Its national series has 246 consecutive
-weeks, no missing values, and no duplicate location-week rows. There are 36
-missing state-level values; they must not be converted to zero.
-
-This is a candidate for a separate real-data forecasting track, not an imported
-Careflow cohort or an implemented website forecast. It measures influenza
-admissions at national/state level, not individual-facility or all-cause demand.
-Reporting requirements, revisions, and coverage changes need explicit handling.
-A latest-revision backtest would be a retrospective benchmark, not evidence of
-real-time performance. The repository's MIT software license alone does not settle
-the underlying target-data reuse terms; dataset-specific terms and attribution
-remain to be verified before publication. The inspected revision, input hash,
-and quality profile stay in ignored `data/risk/forecast-data-review/`.
+The separate observed-data benchmark, frozen protocol, results, source attribution,
+and reproduction commands are documented in [flusight.md](flusight.md). Future
+projections are withheld because the validation winner loses to persistence on
+the reserved season.
