@@ -6,6 +6,7 @@ from sqlalchemy import create_engine, text
 
 from careflow.utilization import CHRONIC_CODES, utilization_details
 from careflow.condition_groups import condition_group
+from careflow.segmentation import export_segments
 
 
 def test_selected_chronic_codes_are_distinct_explicit_clinical_concepts():
@@ -53,6 +54,27 @@ def test_kpis_use_distinct_people_and_encounter_level_median_with_explicit_windo
             assert annual[-1]["unique_patients"] == 2
             assert annual[-1]["median_duration_minutes"] == 3030
             assert chronic["affected_patients"] == 1
+            c.execute(text(f'CREATE TABLE "{schema}".dim_patients (patient_id text, birth_date date, gender text)'))
+            c.execute(text(f'''INSERT INTO "{schema}".dim_patients VALUES
+                ('p1','1960-01-31','female'),('p2','2010-02-01','male'),
+                ('p3',null,'unknown'),('p4','2030-01-01','other')'''))
+            c.execute(text(f'CREATE TABLE "{schema}".fct_medication_requests (patient_id text, status text)'))
+            c.execute(text(f'''INSERT INTO "{schema}".fct_medication_requests VALUES
+                ('p1','active'),('p1','active'),('p2','completed')'''))
+            segments = export_segments(c, f'"{schema}"', summary)
+            assert segments["age_as_of"] == "2025-01-31"
+            cells = segments["cells"]
+            assert sum(row["patient_count"] for row in cells) == 4
+            assert sum(row["seen_patients"] for row in cells) == 2
+            assert sum(row["encounter_count"] for row in cells) == 4
+            assert sum(row["active_request_count"] for row in cells) == 2
+            diabetic = next(row for row in cells if row["clinical_profile"] == "diabetes_and_hypertension")
+            assert diabetic["age_band"] == "65_79"
+            assert diabetic["encounter_count"] == diabetic["active_request_count"] == 2
+            assert sum(row["patient_count"] for row in cells if row["age_band"] == "unknown") == 2
+            assert sum(row["patient_count"] for row in cells if row["clinical_profile"] == "no_selected_chronic") == 3
+            assert all(set(row) == {"age_band", "gender", "clinical_profile", "utilization_band", "patient_count", "seen_patients", "encounter_count", "active_request_count"} for row in cells)
+            assert export_segments(c, f'"{schema}"', None) is None
     finally:
         with engine.begin() as c:
             c.execute(text(f'DROP SCHEMA IF EXISTS "{schema}" CASCADE'))
