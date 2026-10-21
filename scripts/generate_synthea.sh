@@ -2,6 +2,12 @@
 set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
 destination="${1:-data/synthea-v3.3.0-seed42}"
+population="${2:-100}"
+seed="${3:-42}"
+if [[ ! "$population" =~ ^[1-9][0-9]{0,4}$ || ! "$seed" =~ ^[0-9]{1,9}$ ]]; then
+  echo "Usage: $0 [new-output-directory] [population: 1-99999] [numeric-seed]" >&2
+  exit 1
+fi
 if [[ -e "$destination" ]]; then
   echo "Refusing to overwrite $destination. Reuse it for validation or choose a new directory." >&2
   exit 1
@@ -15,5 +21,5 @@ if [[ ! -f "$artifact" ]]; then
   mv "$artifact.partial" "$artifact"
 fi
 printf '%s  %s\n' "$expected" "$artifact" | sha256sum --check --status
-java -Xmx2g -jar "$artifact" -s 42 -cs 42 -p 100 -r 20250101 -e 20250101 \
+java -Xmx2g -jar "$artifact" -s "$seed" -cs "$seed" -p "$population" -r 20250101 -e 20250101 \
   --generate.thread_pool_size=2 --exporter.baseDirectory="$destination" --exporter.fhir.export=true

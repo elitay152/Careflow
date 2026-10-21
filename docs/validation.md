@@ -57,6 +57,20 @@ bash scripts/generate_synthea.sh
 bash scripts/validate_synthea.sh
 ```
 
+For a larger, separately seeded batch, supply a new destination, population, and seed:
+
+```bash
+bash scripts/generate_synthea.sh data/synthea-v3.3.0-p1000-seed43 1000 43
+bash scripts/validate_synthea.sh data/synthea-v3.3.0-p1000-seed43/fhir synthea_p1000_seed43
+```
+
+The population argument targets living patients; deceased patients can increase the
+actual total. This creates a separate cohort rather than appending to the earlier
+one. The pinned generator, two-thread limit, 2 GiB heap, and January 1, 2025
+reference/end date remain unchanged. Generation parameters alone are not evidence
+of successful ingestion; inspect the new validation directory's `results.json`
+and per-file checksum manifest before publishing aggregate data.
+
 The first command refuses to overwrite existing generated data. If it already exists, skip generation and run validation again. Each validation uses a new schema/output name; explicit existing names are refused. To reuse the original input with a chosen fresh name:
 
 ```bash
