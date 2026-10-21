@@ -46,8 +46,11 @@ python -m venv .venv
 
 ## Data pipeline
 
-The loader persists Patient, Encounter, Condition, and MedicationRequest resources.
-Medication references resolve within the same Bundle. Other resource types are
+The loader persists Patient, Encounter, Condition, MedicationRequest, and
+Organization resources. Encounter class, coded types/reasons, provider and location
+references, patient death information, and provider geography are retained.
+Medication references resolve within the same Bundle; provider aliases resolve
+against the Organization catalog without network calls. Other resource types are
 counted separately. This is a supported FHIR R4 subset, not full conformance.
 
 Files load transactionally with SHA-256 checkpoints, upserts, provenance, and
@@ -63,9 +66,21 @@ With `.env` loaded:
 bash scripts/run_pipeline.sh
 ```
 
-The pipeline builds 10 dbt models, runs 32 quality checks, and writes
+The pipeline builds 11 dbt models, runs 39 quality checks, and writes
 `data/dashboard.html`. Default raw and analytics schemas are `public` and
 `analytics`. Warehouse tables are rebuilt in full.
+
+Existing PostgreSQL schemas receive nullable column additions when ingestion
+connects. Replay the original bundles to populate new fields, then rebuild dbt:
+
+```bash
+.venv/bin/careflow ingest /path/to/synthetic/fhir --schema synthea_p1000_seed43 --reprocess
+```
+
+This preserves resource IDs and the usage ledger; unchanged inputs need explicit
+`--reprocess`. Provider bundles may load before or after patient bundles because
+facility matching happens during the warehouse build.
+
 
 `bash scripts/start.sh` runs Dagster on loopback port 3000. Its daily schedule is
 disabled by default; enabling it runs the job at 06:00 UTC while the daemon is
@@ -74,8 +89,8 @@ pipeline commands, scheduled loads, and website refreshes.
 
 ## Larger cohort and website
 
-The portfolio cohort contains **1,194 synthetic patients and 230,785 supported
-records**, with zero quarantines in its validation run. See
+The portfolio cohort contains **1,194 synthetic patients, 230,785 clinical records, and 852 provider
+organizations**, with zero quarantines in its validation run. See
 [cohort generation and validation](docs/validation.md).
 
 Careflow calculates distinct-patient KPIs, encounter-level duration statistics,

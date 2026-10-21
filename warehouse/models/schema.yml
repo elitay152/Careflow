@@ -77,3 +77,18 @@ models:
         data_tests: [not_null]
       - name: prevalence_fraction
         data_tests: [not_null]
+  - name: mart_regional_demand
+    description: Recorded cohort encounters by provider facility, three-digit ZIP area, and care setting; not a whole-facility census.
+    columns:
+      - name: encounter_month
+        data_tests: [not_null]
+      - name: care_setting
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [ambulatory, emergency, inpatient, other]
+      - name: zip_area
+        data_tests: [not_null]
+      - name: encounter_count
+        data_tests: [not_null]

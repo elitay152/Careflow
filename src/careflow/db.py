@@ -1,6 +1,6 @@
 from sqlalchemy import (
-    JSON, Column, ForeignKey, Integer, MetaData, String, Table, Text,
-    create_engine, event,
+    JSON, Boolean, Column, ForeignKey, Integer, MetaData, String, Table, Text,
+    create_engine, event, inspect, text,
 )
 
 metadata = MetaData()
@@ -9,6 +9,8 @@ patients = Table(
     Column("id", String, primary_key=True),
     Column("birth_date", String, nullable=False),
     Column("gender", String, nullable=False),
+    Column("death_date", String),
+    Column("deceased", Boolean),
     Column("source_hash", String, nullable=False),
 )
 encounters = Table(
@@ -18,7 +20,26 @@ encounters = Table(
     Column("status", String, nullable=False),
     Column("started_at", String, nullable=False),
     Column("ended_at", String),
+    Column("class_code", String),
+    Column("class_system", String),
+    Column("type_codes", JSON),
+    Column("reason_codes", JSON),
+    Column("provider_reference", String),
+    Column("location_references", JSON),
     Column("source_hash", String, nullable=False),
+)
+facilities = Table(
+    "facilities", metadata,
+    Column("id", String, primary_key=True),
+    Column("name", String, nullable=False),
+    Column("city", String), Column("state", String),
+    Column("postal_code", String), Column("country", String),
+    Column("bed_count", Integer), Column("source_hash", String, nullable=False),
+)
+facility_aliases = Table(
+    "facility_aliases", metadata,
+    Column("id", String, primary_key=True),
+    Column("facility_id", String, ForeignKey("facilities.id"), nullable=False),
 )
 conditions = Table(
     "conditions", metadata,
@@ -71,6 +92,17 @@ def connect(url):
     if engine.dialect.name not in {"sqlite", "postgresql"}:
         raise ValueError("Supported databases: SQLite and PostgreSQL")
     metadata.create_all(engine)
+    # Nullable additions preserve existing rows; replay source bundles to backfill.
+    with engine.begin() as connection:
+        for table in (patients, encounters):
+            observed = {column["name"] for column in inspect(connection).get_columns(table.name)}
+            for column in table.columns:
+                if column.name not in observed:
+                    if not column.nullable:
+                        raise ValueError("Only nullable additive migrations are supported")
+                    quoted = connection.dialect.identifier_preparer.quote
+                    datatype = column.type.compile(dialect=connection.dialect)
+                    connection.execute(text(f"ALTER TABLE {quoted(table.name)} ADD COLUMN {quoted(column.name)} {datatype}"))
     return engine
 
 
