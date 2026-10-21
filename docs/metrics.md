@@ -238,3 +238,66 @@ set `PYTHONPATH=src`, add `--tabpfn`, and optionally pass
 checkpoint downloads. The local aggregate JSON records package versions and,
 when explicitly provided, the checkpoint SHA-256. Outputs stay under ignored
 `data/risk`; this command neither changes dashboard exports nor makes paid calls.
+
+## Inpatient-target and threshold investigation
+
+`admission_diagnostics_v1` audits exact encounter type/reason codes after merging
+IMP spells. These codes describe outcomes; they never become prediction features.
+Among 567 recorded adult episodes in 2015–2024, 137 involve skilled nursing and 81
+rehabilitation/detox contexts. Only 16 have an explicit non-urgent orthopedic type;
+surgical/ICU codes do not establish admission urgency. Context groups overlap.
+The later development set has 26 positive snapshots: 12 involve skilled nursing
+and six rehabilitation/detox. This is a mixed-setting inpatient target, not a
+validated unplanned acute-hospital admission target.
+
+Earlier rolling score years are fixed at 2019–2022. Each fit uses training-patient
+snapshots from 2015 through three years before scoring, the next two years from
+calibration patients, and the score year from distinct scoring patients. The same
+nine original features, fixed logistic/boosting specifications, and prevalence
+baseline are used. No scoring outcomes select model settings or thresholds.
+Patients recur across windows, so these are correlated development comparisons.
+
+Policies compare calibration-selected F1, a calibration-derived 5% threshold, and
+at most 5% alerts per quarterly screening cohort. Ties use a fixed patient hash;
+floor rounding can reduce the alert fraction. A frozen threshold can exceed its
+calibration alert budget later. Patient-level bootstrap resampling of calibration
+patients (200 draws, seed 0) describes threshold sensitivity, not a confidence
+interval for performance. Low event counts are reported, not hidden.
+
+In the original later development window, boosting's per-screening 5% budget
+captures 4/26 positive snapshots with 36 false alerts; logistic captures 2/26 with
+38 false alerts. Earlier boosting recalls at this budget range from 0% to 16.7%.
+Logistic's calibration-bootstrap F1 threshold spans 2.7% to 32.4% at the 10th–90th
+percentiles. Zero F1-threshold recall partly reflects threshold instability;
+these results do not establish useful clinical prediction.
+
+```bash
+.venv/bin/python -m careflow.admission_diagnostics --confirm-synthetic \
+  --raw-schema synthea_p1000_seed43 --output data/risk/admission-diagnostics/summary.json
+```
+
+Synthea is rule-based and stochastic. Its pinned 3.3.0
+[appendicitis module](https://github.com/synthetichealth/synthea/blob/v3.3.0/src/main/resources/modules/appendicitis.json)
+uses sex/age distributions and random branches; its lung-cancer and COVID modules
+combine clinical attributes with simulated state. Observed histories may omit
+state that drives event timing. This limits what the current features can learn;
+it does not prove synthetic data are wholly random or universally unpredictable.
+
+## Separate public-data forecasting candidate
+
+[CDC FluSight target data](https://github.com/cdcepi/FluSight-forecast-hub/tree/main/target-data)
+contain observed weekly laboratory-confirmed influenza hospital admissions sourced
+from NHSN. The inspected file spans February 5, 2022–October 17, 2026, with 13,038
+location-week rows across 53 locations. Its national series has 246 consecutive
+weeks, no missing values, and no duplicate location-week rows. There are 36
+missing state-level values; they must not be converted to zero.
+
+This is a candidate for a separate real-data forecasting track, not an imported
+Careflow cohort or an implemented website forecast. It measures influenza
+admissions at national/state level, not individual-facility or all-cause demand.
+Reporting requirements, revisions, and coverage changes need explicit handling.
+A latest-revision backtest would be a retrospective benchmark, not evidence of
+real-time performance. The repository's MIT software license alone does not settle
+the underlying target-data reuse terms; dataset-specific terms and attribution
+remain to be verified before publication. The inspected revision, input hash,
+and quality profile stay in ignored `data/risk/forecast-data-review/`.

@@ -53,7 +53,7 @@ def inpatient_episodes(encounters):
     return merged
 
 
-def make_snapshots(patients, encounters, conditions, observation_end, *, external=False):
+def make_snapshots(patients, encounters, conditions, observation_end, *, external=False, all_periods=False):
     end = moment(observation_end)
     by_patient, diagnoses = defaultdict(list), defaultdict(list)
     for raw in encounters:
@@ -106,7 +106,7 @@ def make_snapshots(patients, encounters, conditions, observation_end, *, externa
             period = "train" if index.year <= 2020 else "validation" if index.year <= 2022 else "test"
             if external:
                 period = "external"
-            elif period != assignment:
+            elif not all_periods and period != assignment:
                 exclusions["outside_split"] += 1
                 continue
             completed = [e for e in events if e["status"] == "finished" and e["start"] < index
