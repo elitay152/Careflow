@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-# Prepare the complete demo without using the cloud environment settings UI.
 set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
 if [[ "${1:-}" != "" && "${1:-}" != "--existing-database" ]]; then

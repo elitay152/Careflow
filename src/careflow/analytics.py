@@ -1,4 +1,3 @@
-"""Repository-local dbt runner and a shareable, static analytics dashboard."""
 import html
 import os
 from pathlib import Path

@@ -93,9 +93,11 @@ def archive_summary(path, recorded_on):
 
 def export_public_snapshot(engine, output, *, raw_schema="public", analytics_schema="analytics",
                            dbt_artifacts=None, archive=None, archive_date=None,
-                           synthetic_confirmed=False):
+                           synthetic_confirmed=False, cohort_label="Hand-authored extended demo"):
     if not synthetic_confirmed:
         raise ValueError("Confirm the database contains only synthetic data before public export")
+    if not isinstance(cohort_label, str) or not cohort_label.strip() or len(cohort_label) > 200:
+        raise ValueError("Cohort label must contain 1–200 characters")
     if engine.dialect.name != "postgresql":
         raise ValueError("The public export requires the PostgreSQL warehouse")
     raw, warehouse = identifier(raw_schema), identifier(analytics_schema)
@@ -112,7 +114,10 @@ def export_public_snapshot(engine, output, *, raw_schema="public", analytics_sch
     quality = warehouse_evidence(dbt_artifacts, engine.url.database, raw_schema, analytics_schema, loaded_at)
     assistant = Assistant(engine, BaselinePlanner(), analytics_schema)
     examples = []
-    for question in EXAMPLES:
+    questions = list(EXAMPLES)
+    if monthly:
+        questions[0] = f"Monthly encounters in {monthly[-1]['encounter_month'][:7]}"
+    for question in questions:
         result = assistant.ask(question)
         examples.append({"question": question, **{key: result[key] for key in (
             "status", "answer", "rows", "citations", "plan",
@@ -120,7 +125,7 @@ def export_public_snapshot(engine, output, *, raw_schema="public", analytics_sch
     snapshot = {
         "schema_version": 1, "synthetic_only": True,
         "exported_at": datetime.now(timezone.utc).isoformat(),
-        "current": {"label": "Hand-authored extended demo", "raw_schema": raw_schema,
+        "current": {"label": cohort_label, "raw_schema": raw_schema,
                     "analytics_schema": analytics_schema, "source_loaded_at": loaded_at,
                     "counts": counts, "monthly_utilization": monthly, "conditions": conditions,
                     "medication_status": medications, "quality": quality},

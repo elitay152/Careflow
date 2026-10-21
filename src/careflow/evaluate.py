@@ -1,4 +1,3 @@
-"""Evaluate plans, returned values, refusals, retrieval, latency, and token usage."""
 import argparse
 import json
 import math

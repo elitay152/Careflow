@@ -21,6 +21,18 @@ def test_export_rejects_untrusted_schema_identifiers(value):
         identifier(value)
 
 
+@pytest.mark.parametrize("label", ["", "   ", "x" * 201, None])
+def test_export_rejects_invalid_cohort_label_before_database_access(tmp_path, label):
+    engine = create_engine("sqlite://")
+    try:
+        with pytest.raises(ValueError, match="Cohort label"):
+            export_public_snapshot(engine, tmp_path / "public.json",
+                                   synthetic_confirmed=True, cohort_label=label)
+        assert not (tmp_path / "public.json").exists()
+    finally:
+        engine.dispose()
+
+
 def test_archive_copies_only_aggregate_allowlist(tmp_path):
     source = json.loads((Path(__file__).parents[1] / "docs/validation-results.json").read_text())
     # Deliberately fake sentinel: unknown private fields must never be copied.
