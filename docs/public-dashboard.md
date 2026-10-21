@@ -67,7 +67,7 @@ is described accurately. Its default remains the hand-authored demo. Use matchin
 raw/analytics schemas and dbt artifacts when exporting another cohort. The older
 108-patient archive remains explicitly separate historical evidence.
 
-## Contract, version 2
+## Contract, version 3
 
 - `current`: the selected cohort’s aggregate table counts, monthly utilization,
   coded condition prevalence, medication request statuses, source-load watermark
@@ -81,8 +81,7 @@ raw/analytics schemas and dbt artifacts when exporting another cohort. The older
   templates. The public site replays these examples with their citations; it
   does not implement a new planner, accept arbitrary database queries or connect
   to a model. Replay time is not execution time.
-- `forecast`: explicitly `not_evaluated`, with null predictions and held-out
-  metrics. The website cannot claim a trained or validated forecaster yet.
+- `forecast`: evaluated statistical comparisons when 120 consecutive observed months exist; otherwise an explicit reason and null evidence. Future predictions are gated on improvement over seasonal naive on held-out MAE.
 - `exported_at`: actual JSON generation time. `source_loaded_at` and dbt
   `completed_at` remain separate. Refreshing the browser changes none of them.
 
@@ -102,9 +101,9 @@ committing or publishing. Do not copy `.env`, usage ledgers or raw datasets.
 FHIR Condition is a resource type, not a guarantee of a chronic diagnosis.
 Synthea also uses it for social context, history, and care situations. All source
 records remain in PostgreSQL and the existing prevalence mart. Public snapshot
-version 2 adds a `group` to each `current.conditions` row; baseline assistant
+version 2 added a `group` to each `current.conditions` row; baseline assistant
 responses retain the full mart's original semantics and explicitly document its
-scope. Deploy the updated backend before using the website's version-2 refresh.
+scope. Deploy the updated backend before using the website's version-3 refresh.
 
 `src/careflow/condition_groups.json` is an explicit, project-specific mapping of
 the 195 observed SNOMED CT codes in the seed-43 cohort. It is matched by exact
@@ -124,3 +123,51 @@ mapping update. Nothing is discarded or subtracted from the denominator when
 changing dashboard views. Each row still counts distinct affected patients among
 all loaded patients, including deceased patients; codes can overlap. A context
 bar counts recorded concepts, not adverse events or a validated social-risk score.
+
+## Version 3 metrics and forecast
+
+Version 3 adds `annual_utilization`, `utilization_summary`, and `chronic_summary`.
+Monthly and annual series include encounter-level median durations and measured
+counts alongside the mean. Annual patients are counted distinctly within each UTC
+calendar year. The summary window is the latest observed month plus 11 preceding
+calendar months, with an exclusive end date. It is independent of frontend chart
+filters. Encounter counts include finished encounters only; duration statistics
+exclude missing durations. A mean of monthly medians is never used.
+
+The selected chronic subset is an explicit 19-code list in `utilization.py`:
+type 2 diabetes, essential hypertension, ischemic heart disease, hyperlipidemia,
+hypertriglyceridemia, chronic kidney disease stages 1–4 and end-stage renal disease,
+chronic congestive heart failure, asthma and childhood asthma,
+chronic obstructive bronchitis and emphysema, rheumatoid arthritis, Alzheimer's
+disease and familial early-onset Alzheimer's disease, and epilepsy. This deliberately
+limited project definition is not exhaustive or clinically validated. Generic heart-failure and risk-finding codes are not included merely because
+they could be associated with chronic disease; this is a presentation cohort,
+not a clinical inference.
+`chronic_subset` flags export rows; the summary counts distinct patients with at
+least one mapped active/recurrent/relapsed, confirmed record. The denominator
+remains all loaded patients, including deceased patients. Codes and patients can
+overlap across individual bars; the union is queried directly.
+
+`forecast.py` implements dependency-free statistical models, with protocol
+`rolling_origin_v1`. It uses the latest 120 consecutive observed months, refuses
+to fill absent months with zeros, selects by MAE on three pre-holdout 12-month
+validation folds, and reports all models on the final 12 months. Each candidate
+uses a trailing 60-month fit window; seasonal naive needs only the prior year.
+The candidate list, window, folds, tie order, and publication rule are fixed in
+code before test scoring. Seasonal trend is least-squares linear trend plus
+month fixed effects; predictions are clamped at zero.
+
+The aggregate snapshot includes input SHA-256, evaluation time, exact split/fold
+dates, validation metrics, held-out predictions/actuals, MAE, RMSE and WAPE. Future
+values are refit on all available data only if the validation-selected model beats
+seasonal naive on test MAE. Otherwise they remain null. These results are a
+synthetic-data experiment, not a live healthcare demand forecast. Changing
+historical coverage, incomplete source periods, deceased patients, and simulator
+assumptions limit interpretation. No uncertainty intervals are estimated. No
+LLM request, paid API, retry, or usage-ledger mutation is involved.
+
+The website validator checks exact field allowlists, split/fold ordering, the
+aggregate input hash, score arithmetic, validation-based selection, and the
+publication gate. This checks artifact consistency, not independent authenticity
+of the database or suitability for clinical decisions. Matching passed dbt
+evidence remains separate. Use the updated backend before refreshing the v3 site.

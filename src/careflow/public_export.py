@@ -11,6 +11,8 @@ from sqlalchemy import text
 
 from .assistant import Assistant, BaselinePlanner, json_value, readonly
 from .condition_groups import condition_group
+from .forecast import evaluate_forecast
+from .utilization import CHRONIC_CODES, utilization_details
 
 
 TABLES = ("patients", "encounters", "conditions", "medications", "loads", "quarantine")
@@ -109,11 +111,16 @@ def export_public_snapshot(engine, output, *, raw_schema="public", analytics_sch
         def rows(sql):
             return [{key: json_value(value) for key, value in row.items()}
                     for row in connection.execute(text(sql)).mappings()]
-        monthly = rows(f"SELECT encounter_month, encounter_count, unique_patients, average_duration_minutes FROM {warehouse}.mart_monthly_utilization ORDER BY encounter_month")
+        monthly = rows(f"SELECT encounter_month, encounter_count, unique_patients, average_duration_minutes, median_duration_minutes, measured_duration_count FROM {warehouse}.mart_monthly_utilization ORDER BY encounter_month")
         conditions = rows(f"SELECT condition_name, code_system, code, affected_patients, total_patients, prevalence_fraction FROM {warehouse}.mart_condition_prevalence ORDER BY affected_patients DESC, code_system, code")
         medications = rows(f"SELECT status, count(*) AS request_count FROM {warehouse}.fct_medication_requests GROUP BY status ORDER BY status")
+        annual, summary, chronic = utilization_details(connection, warehouse, monthly, counts["patients"])
+        annual = [{key: json_value(value) for key, value in row.items()} for row in annual]
+        if summary is not None:
+            summary = {key: json_value(value) for key, value in summary.items()}
     for row in conditions:
         row["group"] = condition_group(row["code_system"], row["code"])
+        row["chronic_subset"] = row["code_system"] == "http://snomed.info/sct" and row["code"] in CHRONIC_CODES
     quality = warehouse_evidence(dbt_artifacts, engine.url.database, raw_schema, analytics_schema, loaded_at)
     assistant = Assistant(engine, BaselinePlanner(), analytics_schema)
     examples = []
@@ -125,16 +132,18 @@ def export_public_snapshot(engine, output, *, raw_schema="public", analytics_sch
         examples.append({"question": question, **{key: result[key] for key in (
             "status", "answer", "rows", "citations", "plan",
         )}})
+    forecast = evaluate_forecast(monthly)
     snapshot = {
-        "schema_version": 2, "synthetic_only": True,
+        "schema_version": 3, "synthetic_only": True,
         "exported_at": datetime.now(timezone.utc).isoformat(),
         "current": {"label": cohort_label, "raw_schema": raw_schema,
                     "analytics_schema": analytics_schema, "source_loaded_at": loaded_at,
                     "counts": counts, "monthly_utilization": monthly, "conditions": conditions,
+                    "annual_utilization": annual, "utilization_summary": summary, "chronic_summary": chronic,
                     "medication_status": medications, "quality": quality},
         "archive": archive_summary(archive, archive_date),
         "assistant": {"mode": "baseline", "execution": "exported_replay", "examples": examples},
-        "forecast": {"status": "not_evaluated", "predictions": None, "held_out_metrics": None},
+        "forecast": forecast,
     }
     output = Path(output)
     output.parent.mkdir(parents=True, exist_ok=True)

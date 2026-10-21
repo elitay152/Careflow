@@ -6,6 +6,13 @@ A healthcare data engineering portfolio, starting with a working synthetic FHIR 
 
 **Separate portfolio website:** [export aggregate JSON](docs/public-dashboard.md) for `elitay152/careflow-dashboard`. Pipeline logic and metric definitions stay in Careflow; the frontend needs no database or model credentials.
 
+Aggregate exports include distinct-patient KPIs, encounter-level duration medians,
+annual trends, a selected chronic-condition subset, and held-out statistical
+forecast comparisons. Future predictions remain withheld when the selected model
+does not beat the seasonal baseline. These experiments use synthetic data and
+make no paid model requests; definitions and reproduction steps are in the export
+documentation and website README.
+
 **Run independently of Codex:** see [GitHub, Codespaces, and local setup](docs/github.md). `bash scripts/bootstrap.sh` prepares the full local demo. The optional manual GitHub Actions live test uses a GitHub repository secret and makes one model request; it does not use Codex's secret editor or require publishing this environment.
 
 **Implemented:** Python ingestion, PostgreSQL / SQLite storage, record validation, quarantine, load checkpoints, duplicate-safe reruns, a dbt analytics warehouse, Dagster orchestration, an HTML dashboard, and a browser/API analytics assistant with a structured LLM planner adapter. Baseline mode and database boundaries are verified; live model evaluation awaits credentials.
