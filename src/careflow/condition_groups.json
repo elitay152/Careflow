@@ -1,0 +1,782 @@
+{
+  "10509002": {
+    "label": "Acute bronchitis (disorder)",
+    "group": "clinical"
+  },
+  "105531004": {
+    "label": "Housing unsatisfactory (finding)",
+    "group": "social_context"
+  },
+  "108631000119101": {
+    "label": "History of autologous bone marrow transplant (situation)",
+    "group": "history"
+  },
+  "10939881000119105": {
+    "label": "Unhealthy alcohol drinking behavior (finding)",
+    "group": "clinical"
+  },
+  "109838007": {
+    "label": "Overlapping malignant neoplasm of colon",
+    "group": "clinical"
+  },
+  "110030002": {
+    "label": "Concussion injury of brain (disorder)",
+    "group": "clinical"
+  },
+  "110359009": {
+    "label": "Intellectual disability (disorder)",
+    "group": "clinical"
+  },
+  "111287006": {
+    "label": "Tricuspid valve regurgitation (disorder)",
+    "group": "clinical"
+  },
+  "1121000119107": {
+    "label": "Chronic neck pain (finding)",
+    "group": "clinical"
+  },
+  "1231000119100": {
+    "label": "History of aortic valve replacement (situation)",
+    "group": "history"
+  },
+  "124171000119105": {
+    "label": "Chronic intractable migraine without aura",
+    "group": "clinical"
+  },
+  "125605004": {
+    "label": "Fracture of bone (disorder)",
+    "group": "clinical"
+  },
+  "126906006": {
+    "label": "Neoplasm of prostate",
+    "group": "clinical"
+  },
+  "127013003": {
+    "label": "Disorder of kidney due to diabetes mellitus (disorder)",
+    "group": "clinical"
+  },
+  "128188000": {
+    "label": "Cerebral palsy (disorder)",
+    "group": "clinical"
+  },
+  "128302006": {
+    "label": "Chronic hepatitis C (disorder)",
+    "group": "clinical"
+  },
+  "128613002": {
+    "label": "Seizure disorder",
+    "group": "clinical"
+  },
+  "1551000119108": {
+    "label": "Nonproliferative diabetic retinopathy due to type 2 diabetes mellitus (disorder)",
+    "group": "clinical"
+  },
+  "157141000119108": {
+    "label": "Proteinuria due to type 2 diabetes mellitus (disorder)",
+    "group": "clinical"
+  },
+  "157265008": {
+    "label": "Dislocation of hip joint (disorder)",
+    "group": "clinical"
+  },
+  "15777000": {
+    "label": "Prediabetes",
+    "group": "clinical"
+  },
+  "160903007": {
+    "label": "Full-time employment (finding)",
+    "group": "social_context"
+  },
+  "160904001": {
+    "label": "Part-time employment (finding)",
+    "group": "social_context"
+  },
+  "160968000": {
+    "label": "Risk activity involvement (finding)",
+    "group": "social_context"
+  },
+  "161622006": {
+    "label": "History of lower limb amputation (situation)",
+    "group": "history"
+  },
+  "161665007": {
+    "label": "History of renal transplant (situation)",
+    "group": "history"
+  },
+  "161679004": {
+    "label": "History of artificial joint (situation)",
+    "group": "history"
+  },
+  "161744009": {
+    "label": "Past pregnancy history of miscarriage (situation)",
+    "group": "history"
+  },
+  "162573006": {
+    "label": "Suspected lung cancer (situation)",
+    "group": "care_context"
+  },
+  "162864005": {
+    "label": "Body mass index 30+ - obesity (finding)",
+    "group": "clinical"
+  },
+  "185086009": {
+    "label": "Chronic obstructive bronchitis (disorder)",
+    "group": "clinical"
+  },
+  "192127007": {
+    "label": "Child attention deficit disorder",
+    "group": "clinical"
+  },
+  "195662009": {
+    "label": "Acute viral pharyngitis (disorder)",
+    "group": "clinical"
+  },
+  "195967001": {
+    "label": "Asthma",
+    "group": "clinical"
+  },
+  "196416002": {
+    "label": "Impacted molars",
+    "group": "clinical"
+  },
+  "197927001": {
+    "label": "Recurrent urinary tract infection (disorder)",
+    "group": "clinical"
+  },
+  "201834006": {
+    "label": "Localized, primary osteoarthritis of the hand",
+    "group": "clinical"
+  },
+  "203082005": {
+    "label": "Fibromyalgia (disorder)",
+    "group": "clinical"
+  },
+  "204949001": {
+    "label": "Renal dysplasia (disorder)",
+    "group": "clinical"
+  },
+  "221360009": {
+    "label": "Spasticity (finding)",
+    "group": "clinical"
+  },
+  "224295006": {
+    "label": "Only received primary school education (finding)",
+    "group": "social_context"
+  },
+  "224299000": {
+    "label": "Received higher education (finding)",
+    "group": "social_context"
+  },
+  "224355006": {
+    "label": "Served in armed forces (finding)",
+    "group": "social_context"
+  },
+  "230265002": {
+    "label": "Familial Alzheimer's disease of early onset (disorder)",
+    "group": "clinical"
+  },
+  "232353008": {
+    "label": "Perennial allergic rhinitis with seasonal variation",
+    "group": "clinical"
+  },
+  "233604007": {
+    "label": "Pneumonia (disorder)",
+    "group": "clinical"
+  },
+  "233678006": {
+    "label": "Childhood asthma",
+    "group": "clinical"
+  },
+  "234466008": {
+    "label": "Acquired coagulation disorder (disorder)",
+    "group": "clinical"
+  },
+  "234949000": {
+    "label": "Tooth eruption disorder",
+    "group": "clinical"
+  },
+  "235595009": {
+    "label": "Gastroesophageal reflux disease (disorder)",
+    "group": "clinical"
+  },
+  "236077008": {
+    "label": "Protracted diarrhea",
+    "group": "clinical"
+  },
+  "237602007": {
+    "label": "Metabolic syndrome X (disorder)",
+    "group": "clinical"
+  },
+  "239872002": {
+    "label": "Osteoarthritis of hip",
+    "group": "clinical"
+  },
+  "239873007": {
+    "label": "Osteoarthritis of knee",
+    "group": "clinical"
+  },
+  "24079001": {
+    "label": "Atopic dermatitis",
+    "group": "clinical"
+  },
+  "248595008": {
+    "label": "Sputum finding (finding)",
+    "group": "clinical"
+  },
+  "25064002": {
+    "label": "Headache (finding)",
+    "group": "clinical"
+  },
+  "254632001": {
+    "label": "Small cell carcinoma of lung (disorder)",
+    "group": "clinical"
+  },
+  "254637007": {
+    "label": "Non-small cell lung cancer (disorder)",
+    "group": "clinical"
+  },
+  "254837009": {
+    "label": "Malignant neoplasm of breast (disorder)",
+    "group": "clinical"
+  },
+  "262574004": {
+    "label": "Bullet wound",
+    "group": "clinical"
+  },
+  "263102004": {
+    "label": "Fracture subluxation of wrist",
+    "group": "clinical"
+  },
+  "266934004": {
+    "label": "Transport problem (finding)",
+    "group": "social_context"
+  },
+  "266948004": {
+    "label": "Has a criminal record (finding)",
+    "group": "social_context"
+  },
+  "267020005": {
+    "label": "History of tubal ligation (situation)",
+    "group": "history"
+  },
+  "267036007": {
+    "label": "Dyspnea (finding)",
+    "group": "clinical"
+  },
+  "267102003": {
+    "label": "Sore throat symptom (finding)",
+    "group": "clinical"
+  },
+  "26929004": {
+    "label": "Alzheimer's disease (disorder)",
+    "group": "clinical"
+  },
+  "271737000": {
+    "label": "Anemia (disorder)",
+    "group": "clinical"
+  },
+  "271825005": {
+    "label": "Respiratory distress (finding)",
+    "group": "clinical"
+  },
+  "274531002": {
+    "label": "Abnormal findings diagnostic imaging heart+coronary circulat (finding)",
+    "group": "clinical"
+  },
+  "275272006": {
+    "label": "Brain damage - traumatic",
+    "group": "clinical"
+  },
+  "278860009": {
+    "label": "Chronic low back pain (finding)",
+    "group": "clinical"
+  },
+  "27942005": {
+    "label": "Shock (disorder)",
+    "group": "clinical"
+  },
+  "283545005": {
+    "label": "Gunshot wound (disorder)",
+    "group": "clinical"
+  },
+  "284551006": {
+    "label": "Laceration of foot",
+    "group": "clinical"
+  },
+  "288959006": {
+    "label": "Unable to swallow saliva (finding)",
+    "group": "clinical"
+  },
+  "302870006": {
+    "label": "Hypertriglyceridemia (disorder)",
+    "group": "clinical"
+  },
+  "307426000": {
+    "label": "Acute infective cystitis (disorder)",
+    "group": "clinical"
+  },
+  "312608009": {
+    "label": "Laceration - injury (disorder)",
+    "group": "clinical"
+  },
+  "314529007": {
+    "label": "Medication review due (situation)",
+    "group": "care_context"
+  },
+  "314994000": {
+    "label": "Metastasis from malignant tumor of prostate (disorder)",
+    "group": "clinical"
+  },
+  "33737001": {
+    "label": "Fracture of rib",
+    "group": "clinical"
+  },
+  "361055000": {
+    "label": "Misuses drugs (finding)",
+    "group": "clinical"
+  },
+  "363406005": {
+    "label": "Malignant tumor of colon",
+    "group": "clinical"
+  },
+  "367498001": {
+    "label": "Seasonal allergic rhinitis",
+    "group": "clinical"
+  },
+  "368581000119106": {
+    "label": "Neuropathy due to type 2 diabetes mellitus (disorder)",
+    "group": "clinical"
+  },
+  "36955009": {
+    "label": "Loss of taste (finding)",
+    "group": "clinical"
+  },
+  "36971009": {
+    "label": "Sinusitis (disorder)",
+    "group": "clinical"
+  },
+  "370143000": {
+    "label": "Major depression disorder",
+    "group": "clinical"
+  },
+  "384709000": {
+    "label": "Sprain (morphologic abnormality)",
+    "group": "clinical"
+  },
+  "386661006": {
+    "label": "Fever (finding)",
+    "group": "clinical"
+  },
+  "389087006": {
+    "label": "Hypoxemia (disorder)",
+    "group": "clinical"
+  },
+  "398152000": {
+    "label": "Poor muscle tone (finding)",
+    "group": "clinical"
+  },
+  "398254007": {
+    "label": "Preeclampsia",
+    "group": "clinical"
+  },
+  "39898005": {
+    "label": "Sleep disorder (disorder)",
+    "group": "clinical"
+  },
+  "399211009": {
+    "label": "History of myocardial infarction (situation)",
+    "group": "history"
+  },
+  "399261000": {
+    "label": "History of coronary artery bypass grafting (situation)",
+    "group": "history"
+  },
+  "40055000": {
+    "label": "Chronic sinusitis (disorder)",
+    "group": "clinical"
+  },
+  "40095003": {
+    "label": "Injury of kidney (disorder)",
+    "group": "clinical"
+  },
+  "401303003": {
+    "label": "Acute ST segment elevation myocardial infarction (disorder)",
+    "group": "clinical"
+  },
+  "401314000": {
+    "label": "Acute non-ST segment elevation myocardial infarction (disorder)",
+    "group": "clinical"
+  },
+  "40275004": {
+    "label": "Contact dermatitis",
+    "group": "clinical"
+  },
+  "403190006": {
+    "label": "Epidermal burn of skin (disorder)",
+    "group": "clinical"
+  },
+  "408512008": {
+    "label": "Body mass index 40+ - severely obese (finding)",
+    "group": "clinical"
+  },
+  "414545008": {
+    "label": "Ischemic heart disease (disorder)",
+    "group": "clinical"
+  },
+  "422034002": {
+    "label": "Retinopathy due to type 2 diabetes mellitus (disorder)",
+    "group": "clinical"
+  },
+  "422650009": {
+    "label": "Social isolation (finding)",
+    "group": "social_context"
+  },
+  "423315002": {
+    "label": "Limited social contact (finding)",
+    "group": "social_context"
+  },
+  "424132000": {
+    "label": "Non-small cell carcinoma of lung, TNM stage 1 (disorder)",
+    "group": "clinical"
+  },
+  "424393004": {
+    "label": "Reports of violence in the environment (finding)",
+    "group": "social_context"
+  },
+  "427419006": {
+    "label": "Transformed migraine (disorder)",
+    "group": "clinical"
+  },
+  "428251008": {
+    "label": "History of appendectomy",
+    "group": "history"
+  },
+  "431855005": {
+    "label": "Chronic kidney disease stage 1 (disorder)",
+    "group": "clinical"
+  },
+  "431856006": {
+    "label": "Chronic kidney disease stage 2 (disorder)",
+    "group": "clinical"
+  },
+  "431857002": {
+    "label": "Chronic kidney disease stage 4 (disorder)",
+    "group": "clinical"
+  },
+  "433144002": {
+    "label": "Chronic kidney disease stage 3 (disorder)",
+    "group": "clinical"
+  },
+  "43724002": {
+    "label": "Chill (finding)",
+    "group": "clinical"
+  },
+  "44054006": {
+    "label": "Diabetes mellitus type 2 (disorder)",
+    "group": "clinical"
+  },
+  "443165006": {
+    "label": "Pathological fracture due to osteoporosis (disorder)",
+    "group": "clinical"
+  },
+  "44465007": {
+    "label": "Sprain of ankle",
+    "group": "clinical"
+  },
+  "444814009": {
+    "label": "Viral sinusitis (disorder)",
+    "group": "clinical"
+  },
+  "446096008": {
+    "label": "Perennial allergic rhinitis",
+    "group": "clinical"
+  },
+  "446654005": {
+    "label": "Refugee (person)",
+    "group": "social_context"
+  },
+  "449868002": {
+    "label": "Smokes tobacco daily",
+    "group": "clinical"
+  },
+  "4557003": {
+    "label": "Preinfarction syndrome (disorder)",
+    "group": "clinical"
+  },
+  "46177005": {
+    "label": "End-stage renal disease (disorder)",
+    "group": "clinical"
+  },
+  "48333001": {
+    "label": "Burn injury (morphologic abnormality)",
+    "group": "clinical"
+  },
+  "48724000": {
+    "label": "Mitral valve regurgitation (disorder)",
+    "group": "clinical"
+  },
+  "49436004": {
+    "label": "Atrial fibrillation (disorder)",
+    "group": "clinical"
+  },
+  "49727002": {
+    "label": "Cough (finding)",
+    "group": "clinical"
+  },
+  "5251000175109": {
+    "label": "Received certificate of high school equivalency (finding)",
+    "group": "social_context"
+  },
+  "53827007": {
+    "label": "Excessive salivation (disorder)",
+    "group": "clinical"
+  },
+  "55822004": {
+    "label": "Hyperlipidemia",
+    "group": "clinical"
+  },
+  "56018004": {
+    "label": "Wheezing (finding)",
+    "group": "clinical"
+  },
+  "5602001": {
+    "label": "Opioid abuse (disorder)",
+    "group": "clinical"
+  },
+  "56786000": {
+    "label": "Pulmonic valve stenosis (disorder)",
+    "group": "clinical"
+  },
+  "57676002": {
+    "label": "Joint pain (finding)",
+    "group": "clinical"
+  },
+  "58150001": {
+    "label": "Fracture of clavicle",
+    "group": "clinical"
+  },
+  "59621000": {
+    "label": "Essential hypertension (disorder)",
+    "group": "clinical"
+  },
+  "60234000": {
+    "label": "Aortic valve regurgitation (disorder)",
+    "group": "clinical"
+  },
+  "60573004": {
+    "label": "Aortic valve stenosis (disorder)",
+    "group": "clinical"
+  },
+  "6072007": {
+    "label": "Bleeding from anus",
+    "group": "clinical"
+  },
+  "61977001": {
+    "label": "Chronic type B viral hepatitis (disorder)",
+    "group": "clinical"
+  },
+  "62106007": {
+    "label": "Concussion with no loss of consciousness",
+    "group": "clinical"
+  },
+  "62479008": {
+    "label": "Acquired immune deficiency syndrome (disorder)",
+    "group": "clinical"
+  },
+  "62718007": {
+    "label": "Dribbling from mouth (finding)",
+    "group": "clinical"
+  },
+  "64859006": {
+    "label": "Osteoporosis (disorder)",
+    "group": "clinical"
+  },
+  "6525002": {
+    "label": "Dependent drug abuse (disorder)",
+    "group": "clinical"
+  },
+  "65363002": {
+    "label": "Otitis media",
+    "group": "clinical"
+  },
+  "65710008": {
+    "label": "Acute respiratory failure (disorder)",
+    "group": "clinical"
+  },
+  "66383009": {
+    "label": "Gingivitis (disorder)",
+    "group": "clinical"
+  },
+  "67782005": {
+    "label": "Acute respiratory distress syndrome (disorder)",
+    "group": "clinical"
+  },
+  "67811000119102": {
+    "label": "Primary small cell malignant neoplasm of lung, TNM stage 1 (disorder)",
+    "group": "clinical"
+  },
+  "68235000": {
+    "label": "Nasal congestion (finding)",
+    "group": "clinical"
+  },
+  "68496003": {
+    "label": "Polyp of colon",
+    "group": "clinical"
+  },
+  "68962001": {
+    "label": "Muscle pain (finding)",
+    "group": "clinical"
+  },
+  "698306007": {
+    "label": "Awaiting transplantation of kidney (situation)",
+    "group": "care_context"
+  },
+  "698754002": {
+    "label": "Chronic paralysis due to lesion of spinal cord",
+    "group": "clinical"
+  },
+  "69896004": {
+    "label": "Rheumatoid arthritis",
+    "group": "clinical"
+  },
+  "703151001": {
+    "label": "History of single seizure (situation)",
+    "group": "history"
+  },
+  "706870000": {
+    "label": "Acute pulmonary embolism (disorder)",
+    "group": "clinical"
+  },
+  "706893006": {
+    "label": "Victim of intimate partner abuse (finding)",
+    "group": "social_context"
+  },
+  "713197008": {
+    "label": "Recurrent rectal polyp",
+    "group": "clinical"
+  },
+  "713458007": {
+    "label": "Lack of access to transportation (finding)",
+    "group": "social_context"
+  },
+  "7200002": {
+    "label": "Alcoholism",
+    "group": "clinical"
+  },
+  "72892002": {
+    "label": "Normal pregnancy",
+    "group": "clinical"
+  },
+  "73430006": {
+    "label": "Sleep apnea (disorder)",
+    "group": "clinical"
+  },
+  "73438004": {
+    "label": "Unemployed (finding)",
+    "group": "social_context"
+  },
+  "73595000": {
+    "label": "Stress (finding)",
+    "group": "clinical"
+  },
+  "741062008": {
+    "label": "Not in labor force (finding)",
+    "group": "social_context"
+  },
+  "76571007": {
+    "label": "Septic shock (disorder)",
+    "group": "clinical"
+  },
+  "770349000": {
+    "label": "Sepsis caused by virus (disorder)",
+    "group": "clinical"
+  },
+  "78275009": {
+    "label": "Obstructive sleep apnea syndrome (disorder)",
+    "group": "clinical"
+  },
+  "79619009": {
+    "label": "Mitral valve stenosis (disorder)",
+    "group": "clinical"
+  },
+  "80394007": {
+    "label": "Hyperglycemia (disorder)",
+    "group": "clinical"
+  },
+  "80583007": {
+    "label": "Severe anxiety (panic) (finding)",
+    "group": "clinical"
+  },
+  "82423001": {
+    "label": "Chronic pain (finding)",
+    "group": "clinical"
+  },
+  "83664006": {
+    "label": "Idiopathic atrophic hypothyroidism",
+    "group": "clinical"
+  },
+  "840539006": {
+    "label": "COVID-19",
+    "group": "clinical"
+  },
+  "84114007": {
+    "label": "Heart failure (disorder)",
+    "group": "clinical"
+  },
+  "84229001": {
+    "label": "Fatigue (finding)",
+    "group": "clinical"
+  },
+  "84757009": {
+    "label": "Epilepsy (disorder)",
+    "group": "clinical"
+  },
+  "86406008": {
+    "label": "Human immunodeficiency virus infection (disorder)",
+    "group": "clinical"
+  },
+  "87433001": {
+    "label": "Pulmonary emphysema (disorder)",
+    "group": "clinical"
+  },
+  "876882001": {
+    "label": "Died in hospice (finding)",
+    "group": "care_context"
+  },
+  "88805009": {
+    "label": "Chronic congestive heart failure (disorder)",
+    "group": "clinical"
+  },
+  "90560007": {
+    "label": "Gout",
+    "group": "clinical"
+  },
+  "90781000119102": {
+    "label": "Microalbuminuria due to type 2 diabetes mellitus (disorder)",
+    "group": "clinical"
+  },
+  "91302008": {
+    "label": "Sepsis (disorder)",
+    "group": "clinical"
+  },
+  "91434003": {
+    "label": "Pulmonic valve regurgitation (disorder)",
+    "group": "clinical"
+  },
+  "92691004": {
+    "label": "Carcinoma in situ of prostate (disorder)",
+    "group": "clinical"
+  },
+  "93143009": {
+    "label": "Leukemia, disease (disorder)",
+    "group": "clinical"
+  },
+  "94260004": {
+    "label": "Secondary malignant neoplasm of colon",
+    "group": "clinical"
+  },
+  "95417003": {
+    "label": "Primary fibromyalgia syndrome",
+    "group": "clinical"
+  }
+}

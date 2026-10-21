@@ -67,7 +67,7 @@ is described accurately. Its default remains the hand-authored demo. Use matchin
 raw/analytics schemas and dbt artifacts when exporting another cohort. The older
 108-patient archive remains explicitly separate historical evidence.
 
-## Contract, version 1
+## Contract, version 2
 
 - `current`: the selected cohort’s aggregate table counts, monthly utilization,
   coded condition prevalence, medication request statuses, source-load watermark
@@ -96,3 +96,31 @@ run independently of PostgreSQL, Codex settings or a backend connection. Its
 refresh script copies and checks the contract; it does not transform clinical
 data or attest that a source is synthetic. Review the generated JSON before
 committing or publishing. Do not copy `.env`, usage ledgers or raw datasets.
+
+## Condition groups
+
+FHIR Condition is a resource type, not a guarantee of a chronic diagnosis.
+Synthea also uses it for social context, history, and care situations. All source
+records remain in PostgreSQL and the existing prevalence mart. Public snapshot
+version 2 adds a `group` to each `current.conditions` row; baseline assistant
+responses retain the full mart's original semantics and explicitly document its
+scope. Deploy the updated backend before using the website's version-2 refresh.
+
+`src/careflow/condition_groups.json` is an explicit, project-specific mapping of
+the 195 observed SNOMED CT codes in the seed-43 cohort. It is matched by exact
+terminology system plus code, never a label substring at runtime. The labels
+alongside codes make the mapping reviewable; this is not a SNOMED hierarchy,
+clinical decision tool, or definition of chronic disease.
+
+- `clinical`: clinical conditions and findings, including symptoms, risk findings,
+  and acute conditions; not exclusively chronic disease.
+- `social_context`: education, employment, housing, transport, and related social context.
+- `history`: explicitly historical events/procedures.
+- `care_context`: care reminders, awaiting transplant, suspected diagnosis, and hospice status.
+- `unclassified`: codes absent from the mapping or from another terminology.
+
+Unknown codes never silently become clinical. New cohorts may need a deliberate
+mapping update. Nothing is discarded or subtracted from the denominator when
+changing dashboard views. Each row still counts distinct affected patients among
+all loaded patients, including deceased patients; codes can overlap. A context
+bar counts recorded concepts, not adverse events or a validated social-risk score.

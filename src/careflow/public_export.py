@@ -10,6 +10,7 @@ import tempfile
 from sqlalchemy import text
 
 from .assistant import Assistant, BaselinePlanner, json_value, readonly
+from .condition_groups import condition_group
 
 
 TABLES = ("patients", "encounters", "conditions", "medications", "loads", "quarantine")
@@ -111,6 +112,8 @@ def export_public_snapshot(engine, output, *, raw_schema="public", analytics_sch
         monthly = rows(f"SELECT encounter_month, encounter_count, unique_patients, average_duration_minutes FROM {warehouse}.mart_monthly_utilization ORDER BY encounter_month")
         conditions = rows(f"SELECT condition_name, code_system, code, affected_patients, total_patients, prevalence_fraction FROM {warehouse}.mart_condition_prevalence ORDER BY affected_patients DESC, code_system, code")
         medications = rows(f"SELECT status, count(*) AS request_count FROM {warehouse}.fct_medication_requests GROUP BY status ORDER BY status")
+    for row in conditions:
+        row["group"] = condition_group(row["code_system"], row["code"])
     quality = warehouse_evidence(dbt_artifacts, engine.url.database, raw_schema, analytics_schema, loaded_at)
     assistant = Assistant(engine, BaselinePlanner(), analytics_schema)
     examples = []
@@ -123,7 +126,7 @@ def export_public_snapshot(engine, output, *, raw_schema="public", analytics_sch
             "status", "answer", "rows", "citations", "plan",
         )}})
     snapshot = {
-        "schema_version": 1, "synthetic_only": True,
+        "schema_version": 2, "synthetic_only": True,
         "exported_at": datetime.now(timezone.utc).isoformat(),
         "current": {"label": cohort_label, "raw_schema": raw_schema,
                     "analytics_schema": analytics_schema, "source_loaded_at": loaded_at,
