@@ -37,14 +37,14 @@ usage ledgers, and database dumps outside the frontend.
 
 ## JSON contract
 
-The current contract is version 4:
+The current contract is version 5:
 
 | Field | Contents |
 | --- | --- |
 | `current` | Cohort label, table counts, source-load time, monthly/annual utilization, 12-month KPIs, chronic-subset summary, grouped conditions, medication statuses, aggregate patient segments, and dbt evidence. |
 | `archive` | Separately labeled numeric validation evidence. |
 | `assistant` | Three exported baseline answers with plans and citations; replay only. |
-| `forecast` | Evaluation evidence or an explicit insufficient-history reason; future predictions require the publication gate. |
+| `forecast` | Evaluation evidence or an explicit insufficient-history reason; revised development benchmarks withhold future predictions. |
 | `exported_at` | Snapshot generation time, separate from source loading and dbt completion. |
 
 See [metric definitions](metrics.md) for denominators, units, condition groups,

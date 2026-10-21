@@ -136,7 +136,7 @@ def export_public_snapshot(engine, output, *, raw_schema="public", analytics_sch
         )}})
     forecast = evaluate_forecast(monthly)
     snapshot = {
-        "schema_version": 4, "synthetic_only": True,
+        "schema_version": 5, "synthetic_only": True,
         "exported_at": datetime.now(timezone.utc).isoformat(),
         "current": {"label": cohort_label, "raw_schema": raw_schema,
                     "analytics_schema": analytics_schema, "source_loaded_at": loaded_at,

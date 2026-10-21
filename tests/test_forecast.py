@@ -17,15 +17,15 @@ def test_seasonal_baseline_repeats_matching_month_and_wins_ties():
     assert result["predictions"] is None
 
 
-def test_seasonal_trend_is_evaluated_then_refit_only_after_passing_gate():
+def test_seasonal_trend_wins_but_development_benchmark_never_publishes():
     values = [100 + 3 * i + 5 * (i % 12) for i in range(120)]
     result = evaluate_forecast(series(values))
     assert result["evaluation"]["selected_model"] == "seasonal_trend"
     assert result["evaluation"]["selected_beats_baseline"]
     assert result["held_out_metrics"][2]["mae"] == pytest.approx(0, abs=1e-8)
-    assert [row["value"] for row in result["predictions"]] == pytest.approx(
-        [100 + 3 * i + 5 * (i % 12) for i in range(120, 132)])
-    assert result["predictions"][0]["encounter_month"] == "2025-01-01"
+    assert result["predictions"] is None
+    assert result["evaluation"]["benchmark_status"] == "development"
+
 
 
 def test_holdout_values_cannot_change_selection_or_test_predictions():
@@ -61,3 +61,27 @@ def test_counts_must_be_nonnegative_integers():
     rows[-1]["encounter_count"] = -1
     with pytest.raises(ValueError, match="counts"):
         evaluate_forecast(rows)
+
+
+@pytest.mark.parametrize("model", ["damped_trend", "poisson_seasonal"])
+def test_additional_models_are_finite_nonnegative_and_handle_zero_counts(model):
+    assert predict([0] * 60, model) == [0] * 12
+    assert predict([25] * 60, model) == pytest.approx([25] * 12)
+    assert all(value >= 0 for value in predict([i % 7 for i in range(60)], model))
+
+
+def test_count_model_recovers_a_log_linear_count_process():
+    import math
+    values = [100 * math.exp(0.01 * i) for i in range(60)]
+    assert predict(values, "poisson_seasonal") == pytest.approx(
+        [100 * math.exp(0.01 * i) for i in range(60, 72)], rel=1e-7)
+
+
+def test_each_validation_fold_has_predictions_and_is_isolated_from_its_future():
+    rows = series([100 + i for i in range(120)])
+    first = evaluate_forecast(rows)["evaluation"]
+    rows = series([100 + i if i < 84 else 9999 for i in range(120)])
+    second = evaluate_forecast(rows)["evaluation"]
+    assert first["folds"][0] == second["folds"][0]
+    assert len(first["folds"]) == 3
+    assert all(len(fold["predictions"]) == 12 for fold in first["folds"])

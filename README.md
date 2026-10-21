@@ -80,8 +80,9 @@ records**, with zero quarantines in its validation run. See
 
 Careflow calculates distinct-patient KPIs, encounter-level duration statistics,
 annual trends, and condition groups. Forecast evaluation compares statistical
-models against seasonal naive on a held-out year; future predictions are gated
-on improvement. [Metric definitions](docs/metrics.md) describe the denominators,
+models across three historical validation windows and a previously inspected
+final-year development benchmark. Future predictions remain withheld pending
+independent evaluation. [Metric definitions](docs/metrics.md) describe the denominators,
 units, chronic subset, and evaluation protocol.
 
 From the website checkout, with both repos available and PostgreSQL running:
