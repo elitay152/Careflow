@@ -4,6 +4,8 @@ A healthcare data engineering portfolio, starting with a working synthetic FHIR 
 
 **Security review:** see the [October 2026 audit](docs/security-audit.md) for verified fixes, test evidence, and deployment limitations. Run `bash scripts/security_check.sh` after installation for dependency advisories and tracked-file secret checks.
 
+**Separate portfolio website:** [export aggregate JSON](docs/public-dashboard.md) for `elitay152/careflow-dashboard`. Pipeline logic and metric definitions stay in Careflow; the frontend needs no database or model credentials.
+
 **Run independently of Codex:** see [GitHub, Codespaces, and local setup](docs/github.md). `bash scripts/bootstrap.sh` prepares the full local demo. The optional manual GitHub Actions live test uses a GitHub repository secret and makes one model request; it does not use Codex's secret editor or require publishing this environment.
 
 **Implemented:** Python ingestion, PostgreSQL / SQLite storage, record validation, quarantine, load checkpoints, duplicate-safe reruns, a dbt analytics warehouse, Dagster orchestration, an HTML dashboard, and a browser/API analytics assistant with a structured LLM planner adapter. Baseline mode and database boundaries are verified; live model evaluation awaits credentials.

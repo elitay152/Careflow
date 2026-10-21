@@ -293,3 +293,21 @@ def test_warehouse_metrics_and_dashboard(engine, tmp_path, monkeypatch):
     output = dashboard(engine, tmp_path / "dashboard.html", schema=schema + "_analytics")
     assert "Diabetes mellitus type 2" in output.read_text()
     assert "3 recorded requests" in output.read_text()
+    from careflow.analytics import ROOT
+    from careflow.public_export import export_public_snapshot
+    public = export_public_snapshot(engine, tmp_path / "public.json", raw_schema=schema,
+                                    analytics_schema=schema + "_analytics",
+                                    dbt_artifacts=ROOT / "warehouse" / "target",
+                                    synthetic_confirmed=True)
+    exported = json.loads(public.read_text())
+    assert exported["current"]["quality"]["checks_passed"] == 32
+    assert exported["current"]["counts"]["patients"] == 3
+    assert exported["current"]["counts"]["quarantine"] == 1
+    assert exported["current"]["monthly_utilization"][0]["encounter_count"] == 4
+    assert exported["assistant"]["execution"] == "exported_replay"
+    assert exported["assistant"]["examples"][0]["rows"][0]["value"] == 4
+    assert exported["forecast"]["predictions"] is None
+    assert "patient-1" not in public.read_text()
+    assert "source_path" not in public.read_text()
+    if engine.url.password:
+        assert engine.url.password not in public.read_text()

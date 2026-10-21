@@ -23,10 +23,34 @@ def main():
     subparsers.add_parser("warehouse-build", help="Build and test the PostgreSQL dbt warehouse")
     dashboard_parser = subparsers.add_parser("dashboard", help="Export the warehouse dashboard to HTML")
     dashboard_parser.add_argument("--output", default="data/dashboard.html")
+    public = subparsers.add_parser("export-public", help="Export aggregate JSON for the separate static website")
+    public.add_argument("--output", type=Path, default=Path("data/public/careflow.json"))
+    public.add_argument("--raw-schema", default="public")
+    public.add_argument("--analytics-schema", default="analytics")
+    public.add_argument("--dbt-artifacts", type=Path, help="Matching dbt manifest and run_results directory")
+    public.add_argument("--archive", type=Path, help="Optional archived validation summary")
+    public.add_argument("--archive-date", help="Documented YYYY-MM-DD date of the archived validation")
+    public.add_argument("--confirm-synthetic", action="store_true", help="Confirm this database contains synthetic data only")
     ask = subparsers.add_parser("ask", help="Ask a supported warehouse analytics question")
     ask.add_argument("question")
     ask.add_argument("--mode", choices=["baseline", "llm"], default=None)
     args = parser.parse_args()
+    if args.command == "export-public":
+        if not args.confirm_synthetic:
+            parser.error("--confirm-synthetic is required for public export")
+        if args.archive and not args.archive_date:
+            parser.error("--archive-date is required with --archive")
+        from sqlalchemy import create_engine
+        from .public_export import export_public_snapshot
+        engine = create_engine(args.database_url)
+        try:
+            print(export_public_snapshot(engine, args.output, raw_schema=args.raw_schema,
+                  analytics_schema=args.analytics_schema, dbt_artifacts=args.dbt_artifacts,
+                  archive=args.archive, archive_date=args.archive_date,
+                  synthetic_confirmed=True))
+        finally:
+            engine.dispose()
+        return
     if args.command == "generate-demo":
         print(generate(args.output, extended=args.extended))
         return
