@@ -47,7 +47,8 @@ python -m venv .venv
 ## Data pipeline
 
 The loader persists Patient, Encounter, Condition, MedicationRequest, and
-Organization resources. Encounter class, coded types/reasons, provider and location
+Organization resources, plus selected LOINC Observations (BMI, HbA1c, renal
+measurements, and blood pressure). Encounter class, coded types/reasons, provider and location
 references, patient death information, and provider geography are retained.
 Medication references resolve within the same Bundle; provider aliases resolve
 against the Organization catalog without network calls. Other resource types are
@@ -66,7 +67,7 @@ With `.env` loaded:
 bash scripts/run_pipeline.sh
 ```
 
-The pipeline builds 11 dbt models, runs 39 quality checks, and writes
+The pipeline builds 13 dbt models, runs 49 quality checks, and writes
 `data/dashboard.html`. Default raw and analytics schemas are `public` and
 `analytics`. Warehouse tables are rebuilt in full.
 
@@ -89,7 +90,7 @@ pipeline commands, scheduled loads, and website refreshes.
 
 ## Larger cohort and website
 
-The portfolio cohort contains **1,194 synthetic patients, 230,785 clinical records, and 852 provider
+The portfolio cohort contains **1,194 synthetic patients, 321,670 clinical records, and 852 provider
 organizations**, with zero quarantines in its validation run. See
 [cohort generation and validation](docs/validation.md).
 
@@ -163,3 +164,10 @@ repeat the audit with `--external-schema synthea_p1000_seed44`. This evaluates
 the same fitted model and validation-selected thresholds without tuning them.
 The refresh script includes matching aggregate risk evidence and withholds stale
 or wrong-cohort artifacts. See [metric definitions](docs/metrics.md) for rules.
+
+Selected Observations retain UCUM units, effective/issued timestamps, and source
+provenance. Unsupported observation concepts remain ignored; invalid selected
+quantities are quarantined. After replaying a cohort, run the local feature/model
+comparison with `.venv/bin/python -m careflow.risk_experiment` as described in
+[metric definitions](docs/metrics.md). It evaluates clinical measurements using
+only results issued before each snapshot, with training-only imputation.
