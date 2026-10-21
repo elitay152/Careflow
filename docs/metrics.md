@@ -180,3 +180,61 @@ only aggregate scores, split/coverage counts, input hashes, and source watermark
 Stale evidence is withheld after either source cohort changes. The model is an
 evaluation experiment, not a deployed clinical scoring service.
 
+### Local feature and model comparison
+
+`python -m careflow.risk_experiment` compares the original nine features with 16
+additional event-dated features: 7/30-day completed visits, 30/90-day emergency
+visits, 90-day completed inpatient episodes, inpatient days in the preceding year,
+days since discharge (capped at 366), visits in the preceding 90–180-day window,
+distinct previously recorded condition codes, newly recorded codes in 90 days,
+and six exact-code history flags (ischemic heart disease, heart failure, kidney
+disease, obstructive lung disease, asthma, and dementia). Overlapping completed
+stays merge; inpatient days are clipped to the lookback. These are recorded-history
+and utilization proxies, not a validated comorbidity index or illness-severity score.
+A diagnosis may remain in history after resolution. Absence means no qualifying
+record, not proof of no disease. Counts include contextual Condition codes.
+
+The fixed comparison uses standardized logistic regression and histogram gradient
+boosting (100 iterations, seven leaves, minimum 30 samples per leaf, L2=1, no early
+stopping). Validation F1 alone selects decision thresholds. Both previously
+inspected test cohorts are development evidence; this experiment uses the original
+internal test only and makes no fresh independent performance claim. A new seed
+must be reserved before a final comparison; patient snapshots remain correlated.
+
+On the current original cohort, original-feature boosting has development average
+precision 0.0533 versus logistic regression's 0.0393. Enriched boosting scores
+0.0334 and enriched logistic regression 0.0366. All four validation-selected
+thresholds have zero recall on the 26 positive development-test snapshots. More
+features have not demonstrated an improvement; no replacement model is published.
+
+Socioeconomic history and physiologic severity are not currently persisted.
+Source files contain dated Observations, including BMI, HbA1c, and renal-function
+measurements; using them requires explicit units, availability dates, missingness,
+and lookback rules. Patient-level lifetime DALY/QALY extensions are excluded because
+they are not dated historical measurements. Present-day demographics, addresses,
+and contextual codes must not be reinterpreted as historical income or severity.
+
+TabPFN is opt-in, local, and isolated from the application environment. The v2
+experiment uses `tabpfn==2.2.1`, two estimators, CPU inference, and 1,000 training
+rows chosen by a fixed patient/date hash without consulting labels. Its training
+budget differs from the full-data models. Telemetry is disabled. Model-weight
+license/attribution requirements are separate from the package license. Hugging
+Face checkpoint access is blocked in this workspace (HTTP 403); no TabPFN scores
+are available. An unavailable checkpoint is recorded as unavailable, never as a
+zero score. Only trusted official checkpoints may be loaded; checkpoint files can
+execute code during deserialization.
+
+```bash
+.venv/bin/python -m careflow.risk_experiment --confirm-synthetic \
+  --raw-schema synthea_p1000_seed43 --observation-end 2025-01-01 \
+  --output data/risk/model-comparison/boosting.json
+```
+
+Use a separate virtual environment for TabPFN: its scikit-learn requirements
+conflict with the application's pinned version. With that environment's Python,
+set `PYTHONPATH=src`, add `--tabpfn`, and optionally pass
+`--tabpfn-checkpoint /path/to/trusted-official-v2.ckpt`. Set
+`TABPFN_MODEL_CACHE_DIR` and `HF_HOME` to writable ignored directories for automatic
+checkpoint downloads. The local aggregate JSON records package versions and,
+when explicitly provided, the checkpoint SHA-256. Outputs stay under ignored
+`data/risk`; this command neither changes dashboard exports nor makes paid calls.
