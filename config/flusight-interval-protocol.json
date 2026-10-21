@@ -1,0 +1,15 @@
+{
+  "protocol": "flusight_intervals_v1",
+  "evaluation_role": "Retrospective interval experiment specified after inspecting point-forecast holdout results; not a fresh independent test",
+  "method": "Fixed per-model, per-horizon absolute-residual quantile bands",
+  "levels": [80, 95],
+  "calibration_start": "2023-07-01",
+  "calibration_end": "2025-06-07",
+  "calibration_source": "Earlier validation predictions only; common cutoff no later than the earliest four-week holdout origin",
+  "quantile": "Sorted absolute residual at one-based rank ceil((n+1)*level/100); refuse rank beyond n",
+  "bounds": "Lower=max(0,floor(point-radius)); upper=ceil(point+radius)",
+  "adaptation": "No updates from holdout outcomes",
+  "metrics": ["coverage", "mean_width", "below", "above", "mean_interval_score"],
+  "guarantee": "No guaranteed coverage: temporal dependence, distribution shift, and model selection share earlier seasons",
+  "publication": "Does not change point forecasts, model selection, or publication gate; future projections stay subject to the existing point-forecast gate"
+}
