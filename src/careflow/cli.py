@@ -27,6 +27,7 @@ def main():
     public.add_argument("--output", type=Path, default=Path("data/public/careflow.json"))
     public.add_argument("--raw-schema", default="public")
     public.add_argument("--analytics-schema", default="analytics")
+    public.add_argument("--cohort-label", default="Hand-authored extended demo")
     public.add_argument("--dbt-artifacts", type=Path, help="Matching dbt manifest and run_results directory")
     public.add_argument("--archive", type=Path, help="Optional archived validation summary")
     public.add_argument("--archive-date", help="Documented YYYY-MM-DD date of the archived validation")
@@ -46,6 +47,7 @@ def main():
         try:
             print(export_public_snapshot(engine, args.output, raw_schema=args.raw_schema,
                   analytics_schema=args.analytics_schema, dbt_artifacts=args.dbt_artifacts,
+                  cohort_label=args.cohort_label,
                   archive=args.archive, archive_date=args.archive_date,
                   synthetic_confirmed=True))
         finally:

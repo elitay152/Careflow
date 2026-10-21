@@ -298,8 +298,9 @@ def test_warehouse_metrics_and_dashboard(engine, tmp_path, monkeypatch):
     public = export_public_snapshot(engine, tmp_path / "public.json", raw_schema=schema,
                                     analytics_schema=schema + "_analytics",
                                     dbt_artifacts=ROOT / "warehouse" / "target",
-                                    synthetic_confirmed=True)
+                                    synthetic_confirmed=True, cohort_label="Synthetic integration cohort")
     exported = json.loads(public.read_text())
+    assert exported["current"]["label"] == "Synthetic integration cohort"
     assert exported["current"]["quality"]["checks_passed"] == 32
     assert exported["current"]["counts"]["patients"] == 3
     assert exported["current"]["counts"]["quarantine"] == 1

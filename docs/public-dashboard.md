@@ -38,16 +38,45 @@ rejected. Missing optional build evidence is labeled unverified, never passed.
 This does not independently re-run tests or prove the database was not manually
 modified after a build; rebuild and export in a controlled, quiet workflow.
 
+## Trigger a refresh from PostgreSQL
+
+From the separate website checkout, run `npm run data:refresh -- --confirm-synthetic`.
+It invokes this backend's refresh script, syncs the validated aggregate snapshot,
+and builds the site. The default source is the separately loaded seed-43 cohort.
+The website README documents schema/label overrides and publishing through the
+existing Pages workflow. Both checkouts must contain the refresh implementation.
+
+The backend portion can also run independently:
+
+```bash
+bash scripts/refresh_public.sh --confirm-synthetic \
+  synthea_p1000_seed43 synthea_p1000_seed43_analytics \
+  "Synthea 3.3.0 · seed 43 · 1,000 living-patient target"
+```
+
+This uses `.env`/`DATABASE_URL`, builds/tests dbt into a fresh ignored artifact
+directory, then exports `data/public/careflow.json`. Concurrent refresh scripts
+in this checkout are rejected with a local lock. Keep other loaders and dbt jobs
+stopped during the refresh: the lock does not cover independent pipeline commands.
+A failed build prevents export; the frontend validates bytes before replacing
+its snapshot. The command does not ingest, publish, schedule jobs, use AWS, or
+call a model. Build artifacts remain local under ignored `data/public/`.
+
+The lower-level `export-public` command accepts `--cohort-label` so current data
+is described accurately. Its default remains the hand-authored demo. Use matching
+raw/analytics schemas and dbt artifacts when exporting another cohort. The older
+108-patient archive remains explicitly separate historical evidence.
+
 ## Contract, version 1
 
-- `current`: the current demo's aggregate table counts, monthly utilization,
+- `current`: the selected cohort’s aggregate table counts, monthly utilization,
   coded condition prevalence, medication request statuses, source-load watermark
   and optional dbt evidence. No patient identifiers, raw input, source paths,
   database URLs or credentials are selected.
 - `archive`: optional numeric fields explicitly selected from the committed
   Synthea validation result. `recorded_on` is its documented historical date,
   not a new run timestamp. The website includes this archive and labels it
-  separately from current demo analytics.
+  separately from current cohort analytics.
 - `assistant`: three baseline answers calculated in Careflow using fixed
   templates. The public site replays these examples with their citations; it
   does not implement a new planner, accept arbitrary database queries or connect
