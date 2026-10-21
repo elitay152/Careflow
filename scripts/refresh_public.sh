@@ -24,7 +24,11 @@ export DBT_RAW_SCHEMA="$2" DBT_TARGET_SCHEMA="$3"
 export DBT_TARGET_PATH
 DBT_TARGET_PATH="$(mktemp -d "$PWD/data/public/dbt-refresh-XXXXXXXX")"
 .venv/bin/careflow warehouse-build
-.venv/bin/careflow export-public --confirm-synthetic \
+risk_args=()
+if [[ -f "data/risk/$2/summary.json" ]]; then
+  risk_args=(--risk-artifact "data/risk/$2/summary.json")
+fi
+.venv/bin/careflow export-public --confirm-synthetic "${risk_args[@]}" \
   --raw-schema "$2" --analytics-schema "$3" --cohort-label "$4" \
   --dbt-artifacts "$DBT_TARGET_PATH" \
   --archive docs/validation-results.json --archive-date 2026-10-20 \

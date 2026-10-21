@@ -31,13 +31,33 @@ def main():
     public.add_argument("--analytics-schema", default="analytics")
     public.add_argument("--cohort-label", default="Hand-authored extended demo")
     public.add_argument("--dbt-artifacts", type=Path, help="Matching dbt manifest and run_results directory")
+    public.add_argument("--risk-artifact", type=Path, help="Optional private risk summary; only validated aggregates are exported")
     public.add_argument("--archive", type=Path, help="Optional archived validation summary")
     public.add_argument("--archive-date", help="Documented YYYY-MM-DD date of the archived validation")
     public.add_argument("--confirm-synthetic", action="store_true", help="Confirm this database contains synthetic data only")
+    risk = subparsers.add_parser("risk-audit", help="Build private 90-day admission snapshots and aggregate readiness evidence")
+    risk.add_argument("--raw-schema", default="public")
+    risk.add_argument("--observation-end", required=True, help="Attested exclusive simulator observation cutoff, YYYY-MM-DD")
+    risk.add_argument("--output", type=Path, required=True, help="Private ignored output directory, outside Git artifacts")
+    risk.add_argument("--confirm-synthetic", action="store_true")
+    risk.add_argument("--external-schema", help="Separate-seed source schema for frozen independent evaluation")
+    risk.add_argument("--train", action="store_true", help="Fit fixed local baselines/logistic model only when readiness gates pass; no API calls")
     ask = subparsers.add_parser("ask", help="Ask a supported warehouse analytics question")
     ask.add_argument("question")
     ask.add_argument("--mode", choices=["baseline", "llm"], default=None)
     args = parser.parse_args()
+    if args.command == "risk-audit":
+        if not args.confirm_synthetic:
+            parser.error("--confirm-synthetic is required; observation-end must match the simulator run")
+        from sqlalchemy import create_engine
+        from .hospitalization import run_audit
+        engine = create_engine(args.database_url)
+        try:
+            summary = run_audit(engine, args.raw_schema, args.observation_end, args.output, train=args.train, external_schema=args.external_schema)
+            print(json.dumps(summary, indent=2))
+        finally:
+            engine.dispose()
+        return
     if args.command == "export-public":
         if not args.confirm_synthetic:
             parser.error("--confirm-synthetic is required for public export")
@@ -51,7 +71,7 @@ def main():
                   analytics_schema=args.analytics_schema, dbt_artifacts=args.dbt_artifacts,
                   cohort_label=args.cohort_label,
                   archive=args.archive, archive_date=args.archive_date,
-                  synthetic_confirmed=True))
+                  synthetic_confirmed=True, risk_artifact=args.risk_artifact))
         finally:
             engine.dispose()
         return

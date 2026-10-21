@@ -128,12 +128,55 @@ without fitted curves or accuracy claims. The current cohort supports seven
 facility ambulatory comparisons and thirteen ZIP-area comparisons; facility
 emergency and inpatient series remain sparse.
 
-The latest year has 61 inpatient encounters among 54 patients. A patient-level
-hospitalization model is not trained. Additional independent events, feature
-availability at prediction time, episode definitions, and complete follow-up are
-needed. More synthetic histories can test simulator robustness, not clinical
-validity. Current active diagnoses, future observations, and final medication
-statuses must not leak into historical risk features. Patient death information
-is retained for later censoring work; it does not establish complete follow-up.
-Reference bed counts describe provider catalog metadata and cannot turn this
-selected cohort into a whole-hospital occupancy measure.
+The latest year has 61 inpatient encounters among 54 patients. Inpatient-demand
+counts and patient-level 90-day risk are distinct targets. Reference bed counts
+cannot turn this selected cohort into a whole-hospital occupancy measure.
+
+## 90-day inpatient risk
+
+Protocol `admission_90d_v1` uses quarterly adult snapshots from 2015 through 2024.
+A patient needs at least 365 days since the first available encounter and must
+not already be in an inpatient episode. Overlapping/touching IMP encounters,
+including transfers across providers, merge into one episode. A new episode
+starting strictly after the snapshot and at most 90 days later is positive.
+
+The observation end is an explicitly attested, exclusive simulator cutoff, not
+last-visit inference or enrollment evidence. Undated deaths are excluded. A
+negative needs observable follow-up through the horizon; a death before then is
+censored rather than labeled negative. An admission observed before death remains
+positive. This estimates outcomes among classifiable synthetic snapshots, not a
+competing-risk survival probability for a general population.
+
+Features are age; completed encounters over 90/365 days; completed emergency
+encounters and prior completed inpatient episodes over 365 days; days since a
+completed encounter (capped at 366); and previously recorded selected chronic,
+type-2-diabetes, and hypertension codes. Diagnosis onset and recorded dates must
+both strictly precede the snapshot date. Current condition/verification and
+medication statuses are not features. Completed encounters must end no later than
+the snapshot. Event-dated reconstruction is not a full bitemporal chart history.
+
+A fixed SHA-256 patient partition assigns 70%/15%/15% to train/validation/test.
+Only 2015–2020 snapshots enter training, 2021–2022 validation, and 2023–2024 the
+internal test; snapshots outside a patient's assigned period are not modeled.
+Patient sets do not overlap. Minimum gates are 50 distinct positive training
+patients, ten each in validation/internal test, 50 patients with negative snapshots
+per split, and complete condition recorded-date coverage. These are computability
+guards, not proof of sufficient power or reliability. Repeated quarterly snapshots
+are correlated and must not be counted as independent patients.
+
+The pipeline fits StandardScaler on training data only, followed by fixed L2
+logistic regression (C=1, lbfgs, max_iter=2000). Baselines use training prevalence
+and Laplace-smoothed training outcome rates by prior admission. Each decision
+threshold maximizes validation F1; ties favor precision and then the higher
+threshold. No refit or threshold tuning uses either test cohort. All three models
+report average precision, Brier score, precision/recall, confusion counts, and
+five fixed probability calibration bins; empty bins have null rates.
+
+Independent evaluation uses a new simulator seed with disjoint patient IDs,
+2023–2024 snapshots, and at least 20 positive patients. The original model,
+scaler, and threshold are frozen. It tests simulator-seed robustness, not clinical
+validity. Patient rows stay in ignored local artifacts. Public evidence includes
+only aggregate scores, split/coverage counts, input hashes, and source watermarks.
+Stale evidence is withheld after either source cohort changes. The model is an
+evaluation experiment, not a deployed clinical scoring service.
+
