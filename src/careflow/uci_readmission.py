@@ -112,19 +112,24 @@ def validate_source(metadata_raw, license_raw):
     return url
 
 
+def missing_value(value):
+    return value.strip().casefold() in {"", "?", "nan", "na", "n/a", "null"}
+
+
 def diagnosis_group(value):
-    if value in ("", "?", "nan"):
+    value = value.strip()
+    if missing_value(value) or value.casefold() == "none":
         return "missing"
-    if value.startswith("V"):
+    if value.upper().startswith("V"):
         return "supplemental"
-    if value.startswith("E"):
+    if value.upper().startswith("E"):
         return "external"
     try:
         code = float(value)
     except ValueError:
-        raise ValueError("Unrecognized ICD-9 diagnosis") from None
+        raise ValueError(f"Unrecognized ICD-9 diagnosis token: {value[:32]!r}") from None
     if not math.isfinite(code) or code < 0:
-        raise ValueError("Invalid ICD-9 diagnosis")
+        raise ValueError(f"Invalid ICD-9 diagnosis token: {value[:32]!r}")
     if 250 <= code < 251:
         return "diabetes"
     for low, high, label in (
@@ -208,7 +213,7 @@ def parse_records(raw, protocol):
         features = {}
         for key in NUMERIC:
             value = row[key]
-            number = math.nan if value in ("", "?", "nan") else float(value)
+            number = math.nan if missing_value(value) else float(value)
             if not math.isnan(number) and (
                 not math.isfinite(number) or number < 0 or not number.is_integer()
             ):
@@ -220,7 +225,10 @@ def parse_records(raw, protocol):
             else:
                 value = row[key]
                 features[key] = (
-                    "missing" if value in ("", "?", "nan", "Unknown/Invalid") else value
+                    "missing"
+                    if missing_value(value)
+                    or value.strip().casefold() == "unknown/invalid"
+                    else value
                 )
                 if len(features[key]) > 100:
                     raise ValueError("Oversized categorical value")

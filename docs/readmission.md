@@ -19,7 +19,10 @@ using Python's standard library so no pandas/library dependency is needed. It ca
 count, checks the official dataset page for the expected CC BY 4.0 license link,
 and accepts only the fixed HTTPS dataset CSV URL. Redirects, oversized responses,
 unexpected labels, duplicate encounter IDs, invalid counts, and incomplete datasets
-stop the run. Requests time out without automatic retries. There are no paid models.
+stop the run. Standard missing-value tokens are normalized without regard to case
+or surrounding whitespace. The laboratory category `None` is retained; invalid
+negative or infinite diagnoses remain errors. Requests time out without automatic
+retries. There are no paid models.
 
 Raw CSV, API metadata, and license-page evidence remain under ignored
 `data/external/uci296/`. Without `--download`, the command reuses that local cache.
