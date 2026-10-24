@@ -131,6 +131,16 @@ reservations; there are no automatic retries. Preserve `data/llm-usage.sqlite3`.
 - [GitHub Actions and Codespaces](docs/github.md)
 - [Security boundaries](docs/security-audit.md)
 
+## UCI readmission study
+
+The separate [discharge-time readmission benchmark](docs/readmission.md) fetches
+UCI dataset 296 through its metadata API and CSV endpoint. Four fixed candidates
+use patient-grouped train/validation/test splits and training-only preprocessing.
+Only aggregate evidence reaches the website; raw encounter rows remain ignored.
+The website's main deployment runs the fetch and benchmark on CPU before publishing.
+The first live UCI result is pending verification; local fixture tests are not
+real-data performance evidence.
+
 ## Checks
 
 ```bash
