@@ -168,3 +168,26 @@ def test_ranking_ties_ignore_labels_and_calibration_endpoints_are_inclusive():
     assert m["review"][0]["reviewed"] == 2 and m["review"][0]["captured"] == 1
     with pytest.raises(ValueError):
         metrics(rows, [float("nan")] * 20)
+
+
+def test_failed_fetch_preserves_previous_export_and_does_not_cache(
+    monkeypatch, tmp_path
+):
+    import careflow.uci_readmission as module
+    from urllib.error import URLError
+
+    monkeypatch.setattr(module, "ROOT", tmp_path)
+    monkeypatch.setattr(module, "CACHE", tmp_path / "data/external/uci296")
+    output = tmp_path / "data/public/readmission.json"
+    output.parent.mkdir(parents=True)
+    output.write_text("previous evidence")
+
+    def unavailable(url, limit):
+        raise URLError("test network unavailable")
+
+    monkeypatch.setattr(module, "fetch", unavailable)
+    monkeypatch.setattr("sys.argv", ["uci_readmission", "--download"])
+    with pytest.raises(URLError):
+        module.main()
+    assert output.read_text() == "previous evidence"
+    assert not module.CACHE.exists()

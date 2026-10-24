@@ -468,6 +468,14 @@ def build_artifact(raw, metadata_raw, license_raw, expected_sha256=None):
     }
 
 
+def read_bounded(path, limit):
+    with path.open("rb") as stream:
+        raw = stream.read(limit + 1)
+    if len(raw) > limit:
+        raise ValueError("Cached UCI evidence exceeds size limit")
+    return raw
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--download", action="store_true")
@@ -483,8 +491,8 @@ def main():
         url = validate_source(metadata, license_page)
         raw = fetch(url, MAX_CSV)
     else:
-        metadata = (CACHE / "metadata.json").read_bytes()
-        license_page = (CACHE / "license-page.html").read_bytes()
+        metadata = read_bounded(CACHE / "metadata.json", 2 * 1024 * 1024)
+        license_page = read_bounded(CACHE / "license-page.html", 4 * 1024 * 1024)
         with (CACHE / "data.csv").open("rb") as stream:
             raw = stream.read(MAX_CSV + 1)
     artifact = build_artifact(raw, metadata, license_page, args.expected_sha256)
