@@ -1,0 +1,42 @@
+name: Training-only readmission blend
+on:
+  workflow_dispatch:
+    inputs:
+      source_sha256:
+        description: Reviewed csv_sha256 from the deployed readmission.json
+        required: true
+        type: string
+permissions:
+  contents: read
+jobs:
+  experiment:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: '3.12'
+      - name: Install CPU model dependencies
+        run: |
+          python -m venv .venv
+          .venv/bin/python -m pip install 'pip==26.2.2'
+          .venv/bin/python -m pip install -c security-constraints.txt -e '.[ml]'
+      - name: Run five-fold development experiment
+        env:
+          SOURCE_SHA256: ${{ inputs.source_sha256 }}
+        run: .venv/bin/python -m careflow.readmission_blend --download --expected-sha256 "$SOURCE_SHA256"
+      - name: Show aggregate development results
+        run: |
+          .venv/bin/python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          result = json.loads(Path('data/experiments/readmission-blend.json').read_text())
+          with open(os.environ['GITHUB_STEP_SUMMARY'], 'a') as summary:
+              summary.write('Training-only exploratory model selection. Validation and test were not scored.\n\n```json\n')
+              summary.write(json.dumps(result, indent=2))
+              summary.write('\n```\n')
+          PY

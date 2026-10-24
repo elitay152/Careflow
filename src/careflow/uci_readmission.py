@@ -127,7 +127,9 @@ def diagnosis_group(value):
     try:
         code = float(value)
     except ValueError:
-        raise ValueError(f"Unrecognized ICD-9 diagnosis token: {value[:32]!r}") from None
+        raise ValueError(
+            f"Unrecognized ICD-9 diagnosis token: {value[:32]!r}"
+        ) from None
     if not math.isfinite(code) or code < 0:
         raise ValueError(f"Invalid ICD-9 diagnosis token: {value[:32]!r}")
     if 250 <= code < 251:
@@ -314,15 +316,42 @@ def metrics(rows, probabilities):
     }
 
 
-def evaluate(rows, protocol):
-    import numpy as np
+def make_estimator(model, protocol):
     from sklearn.compose import ColumnTransformer
     from sklearn.ensemble import HistGradientBoostingClassifier
-    from sklearn.exceptions import ConvergenceWarning
     from sklearn.impute import SimpleImputer
     from sklearn.linear_model import LogisticRegression
     from sklearn.pipeline import make_pipeline
     from sklearn.preprocessing import OneHotEncoder, StandardScaler
+
+    prep = ColumnTransformer(
+        [
+            (
+                "numeric",
+                make_pipeline(
+                    SimpleImputer(strategy="median", keep_empty_features=True),
+                    StandardScaler(),
+                ),
+                list(range(len(NUMERIC))),
+            ),
+            (
+                "categorical",
+                OneHotEncoder(handle_unknown="ignore", sparse_output=False),
+                list(range(len(NUMERIC), len(NUMERIC) + len(CATEGORICAL))),
+            ),
+        ]
+    )
+    estimator = (
+        LogisticRegression(**protocol["logistic"])
+        if model == "logistic"
+        else HistGradientBoostingClassifier(**protocol["boosting"])
+    )
+    return make_pipeline(prep, estimator)
+
+
+def evaluate(rows, protocol):
+    import numpy as np
+    from sklearn.exceptions import ConvergenceWarning
     from threadpoolctl import threadpool_limits
     import warnings
 
@@ -363,29 +392,7 @@ def evaluate(rows, protocol):
     test_probabilities = {}
     for model in protocol["models"]:
         if model in ("logistic", "boosting"):
-            prep = ColumnTransformer(
-                [
-                    (
-                        "numeric",
-                        make_pipeline(
-                            SimpleImputer(strategy="median", keep_empty_features=True),
-                            StandardScaler(),
-                        ),
-                        list(range(len(NUMERIC))),
-                    ),
-                    (
-                        "categorical",
-                        OneHotEncoder(handle_unknown="ignore", sparse_output=False),
-                        list(range(len(NUMERIC), len(names))),
-                    ),
-                ]
-            )
-            estimator = (
-                LogisticRegression(**protocol["logistic"])
-                if model == "logistic"
-                else HistGradientBoostingClassifier(**protocol["boosting"])
-            )
-            fitted = make_pipeline(prep, estimator)
+            fitted = make_estimator(model, protocol)
             with threadpool_limits(limits=1), warnings.catch_warnings():
                 warnings.simplefilter("error", ConvergenceWarning)
                 fitted.fit(x["train"], y["train"])
