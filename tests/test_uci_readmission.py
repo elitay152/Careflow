@@ -191,3 +191,38 @@ def test_failed_fetch_preserves_previous_export_and_does_not_cache(
         module.main()
     assert output.read_text() == "previous evidence"
     assert not module.CACHE.exists()
+
+
+def test_missing_diagnoses_normalize_api_tokens_without_accepting_invalid_numbers():
+    for token in ("NaN", " NAN ", "nan", "?", "", " NA ", "n/a", "NULL", "None"):
+        assert diagnosis_group(token) == "missing"
+    assert diagnosis_group(" 250.9 ") == "diabetes"
+    assert diagnosis_group(" v45 ") == "supplemental"
+    for token in ("-1", "inf", "-Infinity"):
+        with pytest.raises(ValueError, match="Invalid ICD-9 diagnosis token"):
+            diagnosis_group(token)
+
+
+def test_csv_missing_diagnoses_do_not_abort_the_cohort_or_change_lab_none_category():
+    p = {**protocol(), "expected_source_rows": 1}
+    rows, quality = parse_records(
+        raw_table(
+            [
+                {
+                    "diag_1": "NaN",
+                    "diag_2": " NAN ",
+                    "diag_3": "?",
+                    "max_glu_serum": "None",
+                    "A1Cresult": "NaN",
+                    "num_lab_procedures": " NA ",
+                }
+            ]
+        ),
+        p,
+    )
+    assert quality["eligible_encounters"] == 1
+    features = rows[0]["features"]
+    assert all(features[f"diag_{i}_group"] == "missing" for i in (1, 2, 3))
+    assert features["max_glu_serum"] == "None"
+    assert features["A1Cresult"] == "missing"
+    assert math.isnan(features["num_lab_procedures"])
