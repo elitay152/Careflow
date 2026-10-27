@@ -1,5 +1,31 @@
 # Careflow
 
+**A healthcare data platform built end to end:** FHIR ingestion → PostgreSQL → dbt warehouse → Dagster orchestration → dashboard.
+
+🔗 **[Live dashboard](https://elitay152.github.io/careflow-dashboard/)**
+
+| | |
+|---|---|
+| **Stack** | Python · PostgreSQL · dbt · Dagster · GitHub Actions · Docker · React/TypeScript |
+| **Scale** | 1,194 synthetic patients · 321,670 clinical records · 852 provider organizations |
+| **Warehouse** | 13 dbt models · 49 data quality checks |
+| **Reliability** | SHA-256 checkpoints, safe reruns, and quarantine for invalid records (zero quarantines in the validation run) |
+
+```mermaid
+flowchart LR
+    A[Synthetic FHIR bundles] --> B[Python loader<br/>checksums, upserts, quarantine]
+    B --> C[(PostgreSQL<br/>raw schema)]
+    C --> D[dbt<br/>13 models, 49 checks]
+    D --> E[(Analytics schema)]
+    E --> F[Aggregate exports]
+    F --> G[React dashboard]
+    E --> H[Restricted analytics assistant]
+    O[Dagster] -.orchestrates.-> B
+    O -.orchestrates.-> D
+```
+
+---
+
 A synthetic healthcare data platform: FHIR ingestion, PostgreSQL, a dbt warehouse,
 Dagster orchestration, a restricted analytics assistant, and statistical forecast
 evaluation and a synthetic 90-day inpatient-risk experiment. A [separate React website](https://elitay152.github.io/careflow-dashboard/)
